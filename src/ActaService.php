@@ -9,7 +9,7 @@ final class PluginActadeentregaActaService
     public const MANAGER_FIELD_ID = 14;
 
     private const ASSET_TYPES = [
-        'Computer' => ['table' => 'glpi_computers', 'label' => 'COMPUTADORA', 'model' => 'computermodels_id'],
+        'Computer' => ['table' => 'glpi_computers', 'label' => 'COMPUTADORA', 'model' => 'computermodels_id', 'asset_type' => 'computertypes_id', 'asset_type_table' => 'glpi_computertypes'],
         'Monitor' => ['table' => 'glpi_monitors', 'label' => 'MONITOR', 'model' => 'monitormodels_id'],
         'Phone' => ['table' => 'glpi_phones', 'label' => 'TELÉFONO', 'model' => 'phonemodels_id'],
         'Printer' => ['table' => 'glpi_printers', 'label' => 'IMPRESORA', 'model' => 'printermodels_id'],
@@ -89,6 +89,8 @@ final class PluginActadeentregaActaService
             $select = ['id', 'name', 'serial', 'otherserial', 'comment', 'users_id', 'manufacturers_id', 'locations_id'];
             $modelField = $config['model'];
             if ($DB->fieldExists($table, $modelField)) $select[] = $modelField;
+            $assetTypeField = $config['asset_type'] ?? '';
+            if ($assetTypeField !== '' && $DB->fieldExists($table, $assetTypeField)) $select[] = $assetTypeField;
             foreach ($DB->request([
                 'SELECT' => $select, 'FROM' => $table,
                 'WHERE' => ['users_id' => $userId, 'is_deleted' => 0, 'is_template' => 0],
@@ -98,6 +100,8 @@ final class PluginActadeentregaActaService
                 $row['_label'] = $config['label'];
                 $row['_table'] = $table;
                 $row['_model_field'] = $config['model'];
+                $row['_asset_type_field'] = $assetTypeField;
+                $row['_asset_type_table'] = $config['asset_type_table'] ?? '';
                 $assets[] = $row;
             }
         }
@@ -106,7 +110,14 @@ final class PluginActadeentregaActaService
 
     public static function describeAsset(array $asset): string
     {
-        $parts = ['Tipo: ' . (string) ($asset['_label'] ?? 'ACTIVO')];
+        $parts = [];
+        $assetTypeField = (string) ($asset['_asset_type_field'] ?? '');
+        $assetTypeTable = (string) ($asset['_asset_type_table'] ?? '');
+        $assetTypeId = (int) ($asset[$assetTypeField] ?? 0);
+        if ($assetTypeField !== '' && $assetTypeTable !== '' && $assetTypeId > 0) {
+            $assetTypeName = Dropdown::getDropdownName($assetTypeTable, $assetTypeId);
+            if (trim((string) $assetTypeName) !== '') $parts[] = 'Tipo de equipo: ' . $assetTypeName;
+        }
         if (trim((string) ($asset['name'] ?? '')) !== '') $parts[] = trim((string) $asset['name']);
         $manufacturer = (int) ($asset['manufacturers_id'] ?? 0);
         if ($manufacturer > 0) $parts[] = 'Fabricante: ' . Dropdown::getDropdownName('glpi_manufacturers', $manufacturer);
