@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-define('PLUGIN_ACTADEENTREGA_VERSION', '0.2.3');
+define('PLUGIN_ACTADEENTREGA_VERSION', '0.2.4');
 
 require_once __DIR__ . '/src/ActaService.php';
 require_once __DIR__ . '/src/ActaPdf.php';
@@ -42,7 +42,7 @@ function plugin_actadeentrega_check_prerequisites(): bool
 function plugin_actadeentrega_check_config(): bool { return true; }
 
 /**
- * Version 0.2.3 groups all responsible names in one signature row to reduce PDF height.
+ * Version 0.2.4 fixes responsible name line breaks and always downloads the PDF after creation.
  */
 function plugin_actadeentrega_update(string $oldVersion): bool
 {
