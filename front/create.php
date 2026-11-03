@@ -86,10 +86,6 @@ try {
         if (isset($path) && is_file($path)) @unlink($path);
         throw $e;
     }
-    if ((int)($_POST['from_user'] ?? 0) === 1) {
-        Session::addMessageAfterRedirect('Acta ' . $number . ' generada correctamente. Puede abrir o descargar el PDF desde el historial de actas de este colaborador.', true, INFO);
-        Html::redirect('/front/user.form.php?id=' . $userId . '&forcetab=PluginActadeentregaActa$1');
-    }
     Session::addMessageAfterRedirect('Acta ' . $number . ' generada correctamente. Se descargará el PDF.', true, INFO);
     Html::redirect('/plugins/actadeentrega/front/pdf.php?id=' . $actaId . '&download=1');
 } catch (Throwable $e) {
