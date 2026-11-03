@@ -5,13 +5,16 @@ define('PLUGIN_ACTADEENTREGA_VERSION', '0.1.0');
 
 require_once __DIR__ . '/src/ActaService.php';
 require_once __DIR__ . '/src/ActaPdf.php';
+require_once __DIR__ . '/src/Menu.php';
+require_once __DIR__ . '/src/Profile.php';
 
 function plugin_init_actadeentrega(): void
 {
     global $PLUGIN_HOOKS;
     $PLUGIN_HOOKS['csrf_compliant']['actadeentrega'] = true;
     $PLUGIN_HOOKS['menu_entry']['actadeentrega'] = true;
-    $PLUGIN_HOOKS['menu_toadd']['actadeentrega'] = ['management' => 'PluginActadeentregaMenu'];
+    $PLUGIN_HOOKS['menu_toadd']['actadeentrega'] = ['plugins' => [PluginActadeentregaMenu::class]];
+    Plugin::registerClass(PluginActadeentregaProfile::class, ['addtabon' => ['Profile']]);
 }
 
 function plugin_version_actadeentrega(): array
