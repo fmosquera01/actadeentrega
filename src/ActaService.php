@@ -8,7 +8,19 @@ final class PluginActadeentregaActaService
     public const MANAGER_CONTAINER_ID = 10;
     public const MANAGER_FIELD_ID = 14;
 
-    private const TYPE_TABLES = [\n        'Computer' => 'glpi_computertypes', 'Monitor' => 'glpi_monitortypes', 'Phone' => 'glpi_phonetypes',\n        'Printer' => 'glpi_printertypes', 'Peripheral' => 'glpi_peripheraltypes',\n        'NetworkEquipment' => 'glpi_networkequipmenttypes', 'PDU' => 'glpi_pdutypes',\n        'Enclosure' => 'glpi_enclosuretypes', 'Rack' => 'glpi_racktypes',\n    ];\n\n    private const ASSET_TYPES = [
+    private const TYPE_TABLES = [
+        'Computer' => 'glpi_computertypes',
+        'Monitor' => 'glpi_monitortypes',
+        'Phone' => 'glpi_phonetypes',
+        'Printer' => 'glpi_printertypes',
+        'Peripheral' => 'glpi_peripheraltypes',
+        'NetworkEquipment' => 'glpi_networkequipmenttypes',
+        'PDU' => 'glpi_pdutypes',
+        'Enclosure' => 'glpi_enclosuretypes',
+        'Rack' => 'glpi_racktypes',
+    ];
+
+    private const ASSET_TYPES = [
         'Computer' => ['table' => 'glpi_computers', 'label' => 'COMPUTADORA', 'model' => 'computermodels_id', 'type' => 'computertypes_id'],
         'Monitor' => ['table' => 'glpi_monitors', 'label' => 'MONITOR', 'model' => 'monitormodels_id', 'type' => 'monitortypes_id'],
         'Phone' => ['table' => 'glpi_phones', 'label' => 'TELÉFONO', 'model' => 'phonemodels_id', 'type' => 'phonestypes_id'],
