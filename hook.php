@@ -22,6 +22,9 @@ function plugin_actadeentrega_install(): bool
         KEY recipient (recipient_users_id),
         KEY issuer (issuer_users_id)
     ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}", 'Acta de Entrega: create acts table');
+    if (class_exists('ProfileRight')) {
+        ProfileRight::addProfileRights(['plugin_actadeentrega']);
+    }
     return true;
 }
 
