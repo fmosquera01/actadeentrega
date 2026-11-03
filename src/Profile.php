@@ -27,7 +27,7 @@ final class PluginActadeentregaProfile extends Profile
         echo "<div class='spaced'>";
         if ($canEdit) echo "<form method='post' action='" . htmlspecialchars(Profile::getFormURL(), ENT_QUOTES, 'UTF-8') . "'>";
         $target->displayRightsChoiceMatrix([
-            ['itemtype' => self::class, 'label' => __('Actas de Entrega', 'actadeentrega'), 'field' => self::$rightname],
+            ['itemtype' => PluginActadeentregaActa::class, 'label' => __('Actas de Entrega', 'actadeentrega'), 'field' => self::$rightname],
         ], ['canedit' => $canEdit, 'title' => __('Derechos de Actas de Entrega', 'actadeentrega')]);
         if ($canEdit) {
             echo "<div class='text-center'>" . Html::hidden('id', ['value' => $profileId]) . Html::submit(_sx('button', 'Save'), ['name' => 'update']) . '</div>';
