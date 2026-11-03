@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 include('../../../inc/includes.php');
-Session::checkRight('plugin_actadeentrega', READ);
+Session::checkRight('plugin_actadeentrega', CREATE);
 require_once __DIR__ . '/../src/ActaService.php';
 Html::header('Nueva acta de entrega', $_SERVER['PHP_SELF'], 'management', 'PluginActadeentregaMenu');
 
