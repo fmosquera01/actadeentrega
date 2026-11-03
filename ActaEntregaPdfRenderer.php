@@ -47,7 +47,7 @@ class ActaEntregaPdfRenderer
         $y = $this->header($d);
         $y = $this->datos($d, $y);
         $y = $this->equipos($d, $y + 8);
-        $y = $this->clausulas($d, $y + 2);
+        $y = $this->clausulas($d, $y + 12);
         $y = $this->firmaBloque('FIRMA DEL RESPONSABLE', $d['responsable'] ?? '', $d['firma_responsable'] ?? null, $y + 10);
         $y = $this->firmaBloque('FIRMA DEL GERENTE O JEFE DE AREA', $d['gerente'] ?? '', $d['firma_gerente'] ?? null, $y + 12);
         $this->entrega($d, $y + 12);
@@ -61,13 +61,13 @@ class ActaEntregaPdfRenderer
         $p = $this->pdf;
         $logo = $d['logo'] ?? (__DIR__ . '/logo_songa.jpeg');
         if (is_file($logo)) {
-            $p->Image($logo, 45, 18, 110, 0, '', '', '', true, 300);
+            $p->Image($logo, 22, 13, 143, 0, '', '', '', true, 300);
         }
         $p->SetTextColor(0, 0, 0);
-        $p->SetFont('helvetica', 'B', 17);
-        $p->SetXY(170, 86);
-        $p->Cell(380, 22, 'ACTA DE ENTREGA DE EQUIPOS', 0, 0, 'L');
-        return 118;
+        $p->SetFont('helvetica', 'B', 16);
+        $p->SetXY(0, 111);
+        $p->Cell(595, 22, 'ACTA DE ENTREGA DE EQUIPOS', 0, 0, 'C');
+        return 133;
     }
 
     /* ------------------------------------------------------------- DATOS */
@@ -144,26 +144,38 @@ class ActaEntregaPdfRenderer
 
         $n = 1;
         foreach (($d['equipos'] ?? []) as $e) {
-            $codigo = trim((string)($e['codigo'] ?? ''));
-            $texto  = (string)($e['descripcion'] ?? '');
-            $html   = ($codigo !== '' ? '<b>' . $this->e($codigo) . ':</b> ' : '') . $this->e($texto);
+            $codigo = $this->clean($e['codigo'] ?? '');
+            $texto  = $this->clean($e['descripcion'] ?? '');
+            $tipo   = $this->clean($e['tipo'] ?? '');
+            $serie  = $this->clean($e['serie'] ?? '');
+            $activo = $this->clean($e['activo'] ?? '') ?: 'N/A';
 
-            $p->SetFont('helvetica', '', 8);
             $plain = ($codigo !== '' ? $codigo . ': ' : '') . $texto;
-            $h = max(13.0, $p->getStringHeight($w[3] - 8, $plain));
+            $html  = ($codigo !== '' ? '<b>' . $this->e($codigo) . ':</b> ' : '') . $this->e($texto);
+
+            // Altura = líneas realmente necesarias (de la celda más larga) + margen mínimo
+            $p->SetFont('helvetica', '', 8);
+            $lh = $p->getFontSize() * $p->getCellHeightRatio();
+            $lines = max(
+                1,
+                $p->getNumLines($plain, $w[3] - 8),
+                $p->getNumLines($tipo,  $w[1] - 8),
+                $p->getNumLines($serie, $w[2] - 8)
+            );
+            $h = max(14.0, $lines * $lh + 4);
 
             $p->SetTextColor(64, 64, 64);
             $cells = [
                 [$w[0], (string)$n, 'C', false],
-                [$w[1], (string)($e['tipo'] ?? ''), 'L', false],
-                [$w[2], (string)($e['serie'] ?? ''), 'L', false],
+                [$w[1], $tipo, 'L', false],
+                [$w[2], $serie, 'L', false],
                 [$w[3], $html, 'L', true],
-                [$w[4], (string)($e['activo'] ?? 'N/A'), 'C', false],
+                [$w[4], $activo, 'C', false],
             ];
             $x = $x0;
             foreach ($cells as $c) {
                 $p->Rect($x, $y, $c[0], $h);
-                $p->MultiCell($c[0], $h, $c[1], 0, $c[2], false, 0, $x, $y + 1.5, true, 0, $c[3], true, $h, 'T');
+                $p->MultiCell($c[0], $h - 3, $c[1], 0, $c[2], false, 0, $x, $y + 2, true, 0, $c[3], true, $h - 3, 'T');
                 $x += $c[0];
             }
             $y += $h;
@@ -184,15 +196,15 @@ class ActaEntregaPdfRenderer
         $y = $p->GetY() + 3;
 
         $p->SetTextColor(0, 0, 0);
-        $p->SetFont('helvetica', '', 10);
+        $p->SetFont('helvetica', '', 9.5);
         $textX = 124.0;
         $textW = 385.0;
         foreach (($d['clausulas'] ?? self::CLAUSULAS) as $c) {
             $h = $p->getStringHeight($textW, $c);
             // viñeta cuadrada
             $p->SetFillColor(0, 0, 0);
-            $p->Rect(106, $y + 4.2, 3.6, 3.6, 'F');
-            $p->MultiCell($textW, $h, $c, 0, 'J', false, 1, $textX, $y, true, 0, false, true, $h, 'T');
+            $p->Rect(107, $y + 3.6, 3.4, 3.4, 'F');
+            $p->MultiCell($textW, $h, $c, 0, 'L', false, 1, $textX, $y, true, 0, false, true, $h, 'T');
             $y += $h + 1.5;
         }
         return $y;
@@ -248,6 +260,14 @@ class ActaEntregaPdfRenderer
         $p->Cell($w, 11, 'RESPONSABLE DE ENTREGA', 0, 0, 'C');
         $p->SetXY($x, $y + 39);
         $p->Cell($w, 11, (string)($d['responsable_entrega'] ?? ''), 0, 0, 'C');
+    }
+
+    /** Quita etiquetas, convierte saltos/espacios raros en un solo espacio y recorta. */
+    private function clean($s): string
+    {
+        $s = html_entity_decode(strip_tags((string)$s), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $s = preg_replace('/[\s\x{00A0}]+/u', ' ', $s);
+        return trim((string)$s);
     }
 
     private function e($s): string
