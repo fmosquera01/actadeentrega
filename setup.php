@@ -7,6 +7,7 @@ require_once __DIR__ . '/src/ActaService.php';
 require_once __DIR__ . '/src/ActaPdf.php';
 require_once __DIR__ . '/src/Menu.php';
 require_once __DIR__ . '/src/Profile.php';
+require_once __DIR__ . '/src/Acta.php';
 
 function plugin_init_actadeentrega(): void
 {
@@ -14,6 +15,7 @@ function plugin_init_actadeentrega(): void
     $PLUGIN_HOOKS['csrf_compliant']['actadeentrega'] = true;
     $PLUGIN_HOOKS['menu_entry']['actadeentrega'] = true;
     $PLUGIN_HOOKS['menu_toadd']['actadeentrega'] = ['plugins' => [PluginActadeentregaMenu::class]];
+    Plugin::registerClass(PluginActadeentregaActa::class);
     Plugin::registerClass(PluginActadeentregaProfile::class, ['addtabon' => ['Profile']]);
 }
 
