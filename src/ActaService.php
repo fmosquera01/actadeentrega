@@ -55,6 +55,15 @@ final class PluginActadeentregaActaService
         global $DB;
         if ($locationId < 1 || !$DB->tableExists(self::MANAGER_TABLE)
             || !$DB->fieldExists(self::MANAGER_TABLE, self::MANAGER_FIELD)) return '';
+        if ($DB->tableExists('glpi_plugin_fields_fields')) {
+            $fieldMeta = $DB->request([
+                'SELECT' => ['id', 'plugin_fields_containers_id', 'name'],
+                'FROM' => 'glpi_plugin_fields_fields',
+                'WHERE' => ['id' => self::MANAGER_FIELD_ID, 'plugin_fields_containers_id' => self::MANAGER_CONTAINER_ID],
+                'LIMIT' => 1,
+            ])->current();
+            if (!$fieldMeta || (string)$fieldMeta['name'] !== self::MANAGER_FIELD) return '';
+        }
         $row = $DB->request([
             'SELECT' => [self::MANAGER_FIELD],
             'FROM' => self::MANAGER_TABLE,
