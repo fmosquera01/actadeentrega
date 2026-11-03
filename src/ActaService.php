@@ -115,12 +115,23 @@ final class PluginActadeentregaActaService
         $assetTypeTable = (string) ($asset['_asset_type_table'] ?? '');
         $assetTypeId = (int) ($asset[$assetTypeField] ?? 0);
         if ($assetTypeField !== '' && $assetTypeTable !== '' && $assetTypeId > 0) {
-            $assetTypeName = Dropdown::getDropdownName($assetTypeTable, $assetTypeId);
-            if (trim((string) $assetTypeName) !== '') $parts[] = 'Tipo de equipo: ' . $assetTypeName;
+            $assetTypeName = trim((string) Dropdown::getDropdownName($assetTypeTable, $assetTypeId));
+            if ($assetTypeName !== '') $parts[] = $assetTypeName;
         }
-        if (trim((string) ($asset['name'] ?? '')) !== '') $parts[] = trim((string) $asset['name']);
+
+        // En computadoras el nombre interno (por ejemplo, s906) no forma parte
+        // de la descripción institucional solicitada.
+        if (($asset['_itemtype'] ?? '') !== 'Computer'
+            && trim((string) ($asset['name'] ?? '')) !== '') {
+            $parts[] = trim((string) $asset['name']);
+        }
+
         $manufacturer = (int) ($asset['manufacturers_id'] ?? 0);
-        if ($manufacturer > 0) $parts[] = 'Fabricante: ' . Dropdown::getDropdownName('glpi_manufacturers', $manufacturer);
+        if ($manufacturer > 0) {
+            $name = trim((string) Dropdown::getDropdownName('glpi_manufacturers', $manufacturer));
+            if ($name !== '') $parts[] = $name;
+        }
+
         $modelField = (string) ($asset['_model_field'] ?? '');
         $modelId = (int) ($asset[$modelField] ?? 0);
         if ($modelId > 0) {
@@ -131,16 +142,21 @@ final class PluginActadeentregaActaService
                 'PDU' => 'glpi_pdumodels', 'Enclosure' => 'glpi_enclosuremodels', 'Rack' => 'glpi_rackmodels',
                 default => '',
             };
-            if ($modelTable !== '') $parts[] = 'Modelo: ' . Dropdown::getDropdownName($modelTable, $modelId);
+            if ($modelTable !== '') {
+                $name = trim((string) Dropdown::getDropdownName($modelTable, $modelId));
+                if ($name !== '') $parts[] = $name;
+            }
         }
+
         if (($asset['_itemtype'] ?? '') === 'Computer') {
             $parts = array_merge($parts, self::computerSpecifications((int)($asset['id'] ?? 0)));
         }
-        $comment = trim((string) ($asset['comment'] ?? ''));
-        if ($comment !== '') $parts[] = 'Comentario: ' . $comment;
-        return implode("\n", $parts);
-    }
 
+        $comment = trim((string) ($asset['comment'] ?? ''));
+        if ($comment !== '') $parts[] = $comment;
+
+        return implode(', ', array_values(array_filter($parts, static fn($v) => trim((string)$v) !== '')));
+    }
 
     private static function computerSpecifications(int $computerId): array
     {
@@ -151,18 +167,49 @@ final class PluginActadeentregaActaService
             if (is_file($file)) require_once $file;
         }
         if (!class_exists($builder)) return [];
+
         try {
             $computer = new Computer();
             if (!$computer->getFromDB($computerId)) return [];
             $snapshot = $builder::build($computer);
             $components = $snapshot['components'] ?? [];
             $lines = [];
-            foreach (['processors' => 'Procesador', 'memories' => 'Memoria RAM', 'hard_drives' => 'Almacenamiento'] as $key => $label) {
-                foreach (($components[$key] ?? []) as $component) {
-                    $detail = trim((string)($component['device']['report_label'] ?? ''));
-                    if ($detail !== '') $lines[] = $label . ': ' . $detail;
-                }
+
+            foreach (($components['processors'] ?? []) as $component) {
+                $detail = trim((string)($component['device']['report_label'] ?? ''));
+                if ($detail !== '') $lines[] = $detail;
             }
+
+            foreach (($components['memories'] ?? []) as $component) {
+                $device = $component['device'] ?? [];
+                $relation = $component['relation'] ?? [];
+
+                $typeId = (int)($device['devicememorytypes_id'] ?? 0);
+                $memoryType = $typeId > 0
+                    ? trim((string)Dropdown::getDropdownName('glpi_devicememorytypes', $typeId))
+                    : '';
+                $frequency = (int)($device['frequence'] ?? $device['frequency'] ?? 0);
+                $designation = trim((string)($device['designation'] ?? ''));
+                $size = (float)($relation['size'] ?? $device['size_default'] ?? $device['size'] ?? 0);
+                $sizeGb = $size > 0 ? (int)round($size / 1024) : 0;
+
+                $memoryParts = [];
+                if ($memoryType !== '') $memoryParts[] = $memoryType;
+                if ($frequency > 0) $memoryParts[] = (string)$frequency;
+                if ($designation !== '') $memoryParts[] = $designation;
+                $memoryLabel = implode(' - ', $memoryParts);
+                if ($sizeGb > 0) $memoryLabel .= ($memoryLabel !== '' ? ' ' : '') . $sizeGb . ' GB';
+                if ($memoryLabel === '') {
+                    $memoryLabel = trim((string)($device['report_label'] ?? ''));
+                }
+                if ($memoryLabel !== '') $lines[] = $memoryLabel;
+            }
+
+            foreach (($components['hard_drives'] ?? []) as $component) {
+                $detail = trim((string)($component['device']['report_label'] ?? ''));
+                if ($detail !== '') $lines[] = $detail;
+            }
+
             return $lines;
         } catch (Throwable $e) {
             return [];
