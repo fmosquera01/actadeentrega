@@ -106,7 +106,7 @@ final class PluginActadeentregaActaService
 
     public static function describeAsset(array $asset): string
     {
-        $parts = [];
+        $parts = ['Tipo: ' . (string) ($asset['_label'] ?? 'ACTIVO')];
         if (trim((string) ($asset['name'] ?? '')) !== '') $parts[] = trim((string) $asset['name']);
         $manufacturer = (int) ($asset['manufacturers_id'] ?? 0);
         if ($manufacturer > 0) $parts[] = 'Fabricante: ' . Dropdown::getDropdownName('glpi_manufacturers', $manufacturer);
