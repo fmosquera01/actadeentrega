@@ -8,28 +8,16 @@ final class PluginActadeentregaActaService
     public const MANAGER_CONTAINER_ID = 10;
     public const MANAGER_FIELD_ID = 14;
 
-    private const TYPE_TABLES = [
-        'Computer' => 'glpi_computertypes',
-        'Monitor' => 'glpi_monitortypes',
-        'Phone' => 'glpi_phonetypes',
-        'Printer' => 'glpi_printertypes',
-        'Peripheral' => 'glpi_peripheraltypes',
-        'NetworkEquipment' => 'glpi_networkequipmenttypes',
-        'PDU' => 'glpi_pdutypes',
-        'Enclosure' => 'glpi_enclosuretypes',
-        'Rack' => 'glpi_racktypes',
-    ];
-
     private const ASSET_TYPES = [
-        'Computer' => ['table' => 'glpi_computers', 'label' => 'COMPUTADORA', 'model' => 'computermodels_id', 'type' => 'computertypes_id'],
-        'Monitor' => ['table' => 'glpi_monitors', 'label' => 'MONITOR', 'model' => 'monitormodels_id', 'type' => 'monitortypes_id'],
-        'Phone' => ['table' => 'glpi_phones', 'label' => 'TELÉFONO', 'model' => 'phonemodels_id', 'type' => 'phonestypes_id'],
-        'Printer' => ['table' => 'glpi_printers', 'label' => 'IMPRESORA', 'model' => 'printermodels_id', 'type' => 'printertypes_id'],
-        'Peripheral' => ['table' => 'glpi_peripherals', 'label' => 'PERIFÉRICO', 'model' => 'peripheralmodels_id', 'type' => 'peripheraltypes_id'],
-        'NetworkEquipment' => ['table' => 'glpi_networkequipments', 'label' => 'EQUIPO DE RED', 'model' => 'networkequipmentmodels_id', 'type' => 'networkequipmenttypes_id'],
-        'PDU' => ['table' => 'glpi_pdus', 'label' => 'PDU', 'model' => 'pdumodels_id', 'type' => 'pdutypes_id'],
-        'Enclosure' => ['table' => 'glpi_enclosures', 'label' => 'GABINETE', 'model' => 'enclosuremodels_id', 'type' => 'enclosuretypes_id'],
-        'Rack' => ['table' => 'glpi_racks', 'label' => 'RACK', 'model' => 'rackmodels_id', 'type' => 'racktypes_id'],
+        'Computer' => ['table' => 'glpi_computers', 'label' => 'COMPUTADORA', 'model' => 'computermodels_id'],
+        'Monitor' => ['table' => 'glpi_monitors', 'label' => 'MONITOR', 'model' => 'monitormodels_id'],
+        'Phone' => ['table' => 'glpi_phones', 'label' => 'TELÉFONO', 'model' => 'phonemodels_id'],
+        'Printer' => ['table' => 'glpi_printers', 'label' => 'IMPRESORA', 'model' => 'printermodels_id'],
+        'Peripheral' => ['table' => 'glpi_peripherals', 'label' => 'PERIFÉRICO', 'model' => 'peripheralmodels_id'],
+        'NetworkEquipment' => ['table' => 'glpi_networkequipments', 'label' => 'EQUIPO DE RED', 'model' => 'networkequipmentmodels_id'],
+        'PDU' => ['table' => 'glpi_pdus', 'label' => 'PDU', 'model' => 'pdumodels_id'],
+        'Enclosure' => ['table' => 'glpi_enclosures', 'label' => 'GABINETE', 'model' => 'enclosuremodels_id'],
+        'Rack' => ['table' => 'glpi_racks', 'label' => 'RACK', 'model' => 'rackmodels_id'],
     ];
 
     public static function getUser(int $id): array
@@ -99,9 +87,8 @@ final class PluginActadeentregaActaService
             $table = $config['table'];
             if (!$DB->tableExists($table) || !$DB->fieldExists($table, 'users_id')) continue;
             $select = ['id', 'name', 'serial', 'otherserial', 'comment', 'users_id', 'manufacturers_id', 'locations_id'];
-            foreach ([$config['model'], $config['type']] as $field) {
-                if ($DB->fieldExists($table, $field)) $select[] = $field;
-            }
+            $modelField = $config['model'];
+            if ($DB->fieldExists($table, $modelField)) $select[] = $modelField;
             foreach ($DB->request([
                 'SELECT' => $select, 'FROM' => $table,
                 'WHERE' => ['users_id' => $userId, 'is_deleted' => 0, 'is_template' => 0],
@@ -109,12 +96,6 @@ final class PluginActadeentregaActaService
             ]) as $row) {
                 $row['_itemtype'] = $itemtype;
                 $row['_label'] = $config['label'];
-                $typeId = (int) ($row[$config['type']] ?? 0);
-                $typeTable = self::TYPE_TABLES[$itemtype] ?? '';
-                if ($typeId > 0 && $typeTable !== '') {
-                    $typeName = (string) Dropdown::getDropdownName($typeTable, $typeId);
-                    if ($typeName !== '') $row['_label'] = mb_strtoupper($typeName);
-                }
                 $row['_table'] = $table;
                 $row['_model_field'] = $config['model'];
                 $assets[] = $row;
