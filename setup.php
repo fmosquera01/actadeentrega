@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-define('PLUGIN_ACTADEENTREGA_VERSION', '0.2.1');
+define('PLUGIN_ACTADEENTREGA_VERSION', '0.2.2');
 
 require_once __DIR__ . '/src/ActaService.php';
 require_once __DIR__ . '/src/ActaPdf.php';
@@ -42,7 +42,7 @@ function plugin_actadeentrega_check_prerequisites(): bool
 function plugin_actadeentrega_check_config(): bool { return true; }
 
 /**
- * Version 0.2.1 improves native GLPI user selectors and preserves the user profile workflow.
+ * Version 0.2.2 fixes the multiple user selector and embeds profile-origin acta creation in the user tab.
  */
 function plugin_actadeentrega_update(string $oldVersion): bool
 {
