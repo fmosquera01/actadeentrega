@@ -232,7 +232,7 @@ class ActaEntregaPdfRenderer
         $p->Rect($x, $y, $nameW, $rowH);
         $p->Rect($x + $nameW, $y, $sigW, $rowH);
         $p->SetFont('helvetica', 'B', 8.5);
-        $p->MultiCell($nameW, $rowH, implode("\\n", $names), 0, 'C', false, 0, $x, $y, true, 0, false, true, $rowH, 'M');
+        $p->MultiCell($nameW, $rowH, implode("\n", $names), 0, 'C', false, 0, $x, $y, true, 0, false, true, $rowH, 'M');
         return $y + $rowH;
     }
 
