@@ -218,7 +218,7 @@ final class PluginActadeentregaActaService
             throw new RuntimeException($locked ? 'PIN incorrecto. Firma bloqueada durante 15 minutos.' : 'PIN incorrecto.');
         }
         $relative = (string) $row['signature_path'];
-        $base = realpath(rtrim(GLPI_VAR_DIR, DIRECTORY_SEPARATOR) . '/_plugins/informeglopi/signatures/users');
+        $base = realpath(rtrim(GLPI_VAR_DIR, DIRECTORY_SEPARATOR) . '/_plugins/informeglpi/signatures/users');
         $path = realpath(rtrim(GLPI_VAR_DIR, DIRECTORY_SEPARATOR) . '/' . ltrim($relative, '/'));
         if (!$base || !$path || !str_starts_with($path, $base . DIRECTORY_SEPARATOR) || !is_file($path)) {
             throw new RuntimeException('No se encontró el archivo privado de firma personal.');
