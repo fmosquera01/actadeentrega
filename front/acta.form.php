@@ -24,6 +24,13 @@ foreach ($DB->request(['SELECT' => ['id','name','firstname','realname'],'FROM'=>
 }
 echo "</select></form>";
 if ($user) {
+    echo "<h3>Datos recuperados de GLPI</h3><table class='table table-sm table-bordered' style='max-width:900px'>";
+    foreach (['recipient'=>'Responsable','department'=>'Departamento','jobtitle'=>'Cargo','supervisor'=>'Jefe / Supervisor','area'=>'Área / Ubicación','manager'=>'Gerente (ubicación o supervisor)'] as $key=>$label) {
+        $value = trim((string)($user[$key] ?? ''));
+        echo '<tr><th style="width:280px">' . $label . '</th><td>' . ($value !== '' ? htmlspecialchars($value, ENT_QUOTES, 'UTF-8') : '<span class="text-danger fw-bold">FALTA COMPLETAR EN GLPI</span>') . '</td></tr>';
+    }
+    echo "</table><h3>Activos asignados actualmente</h3>";
+    echo "<form method='post' action='/plugins/actadeentrega/front/create.php'><input type='hidden' name='_glpi_csrf_token' value='" . Session::getNewCSRFToken(true) . "'><input type='hidden' name='users_id' value='" . $userId . "'>";
     echo "<div class='mb-3' style='max-width:760px'><label class='form-label'>Otros colaboradores responsables (opcional)</label><select class='form-select select2' name='co_responsible_users[]' multiple data-placeholder='Buscar y seleccionar colaboradores'>";
     foreach ($DB->request(['SELECT' => ['id','name','firstname','realname'],'FROM'=>'glpi_users','WHERE'=>['is_deleted'=>0,'is_active'=>1],'ORDER'=>['realname ASC','firstname ASC']]) as $co) {
         if ((int)$co['id'] === $userId) continue;
@@ -32,13 +39,7 @@ if ($user) {
         echo '<option value="' . (int)$co['id'] . '">' . htmlspecialchars($coName, ENT_QUOTES, 'UTF-8') . '</option>';
     }
     echo "</select><small class='form-text text-muted'>Los colaboradores adicionales quedarán registrados como corresponsables únicamente en esta acta. La asignación del activo en GLPI no cambiará.</small></div>";
-    echo "<h3>Datos recuperados de GLPI</h3><table class='table table-sm table-bordered' style='max-width:900px'>";
-    foreach (['recipient'=>'Responsable','department'=>'Departamento','jobtitle'=>'Cargo','supervisor'=>'Jefe / Supervisor','area'=>'Área / Ubicación','manager'=>'Gerente (ubicación o supervisor)'] as $key=>$label) {
-        $value = trim((string)($user[$key] ?? ''));
-        echo '<tr><th style="width:280px">' . $label . '</th><td>' . ($value !== '' ? htmlspecialchars($value, ENT_QUOTES, 'UTF-8') : '<span class="text-danger fw-bold">FALTA COMPLETAR EN GLPI</span>') . '</td></tr>';
-    }
-    echo "</table><h3>Activos asignados actualmente</h3>";
-    echo "<form method='post' action='/plugins/actadeentrega/front/create.php'><input type='hidden' name='_glpi_csrf_token' value='" . Session::getNewCSRFToken(true) . "'><input type='hidden' name='users_id' value='" . $userId . "'>";
+
     echo "<div class='table-responsive'><table class='table table-sm table-hover table-bordered'><thead><tr><th>Incluir</th><th>Tipo</th><th>Serie</th><th>Descripción del equipo</th><th>Activo fijo</th></tr></thead><tbody>";
     foreach ($assets as $a) {
         $desc = PluginActadeentregaActaService::describeAsset($a);
