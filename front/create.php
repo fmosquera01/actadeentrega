@@ -71,7 +71,7 @@ try {
             'act_date'=>$now, 'snapshot'=>json_encode($snapshot, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR),
             'pdf_path'=>'_plugins/actadeentrega/acts/'.$file, 'pdf_sha256'=>$hash,
         ]);
-        $actaId = (int)$DB->insert_id();
+        $actaId = (int)$DB->insertId();
         foreach ($participants as $order => $participant) {
             $DB->insert('glpi_plugin_actadeentrega_acta_users', [
                 'plugin_actadeentrega_actas_id' => $actaId,
@@ -86,9 +86,17 @@ try {
         if (isset($path) && is_file($path)) @unlink($path);
         throw $e;
     }
+    if ((int)($_POST['from_user'] ?? 0) === 1) {
+        Session::addMessageAfterRedirect('Acta ' . $number . ' generada correctamente. Puede abrir o descargar el PDF desde el historial de actas de este colaborador.', true, INFO);
+        Html::redirect('/front/user.form.php?id=' . $userId . '&forcetab=PluginActadeentregaActa$1');
+    }
     Session::addMessageAfterRedirect('Acta ' . $number . ' generada correctamente. Se descargará el PDF.', true, INFO);
     Html::redirect('/plugins/actadeentrega/front/pdf.php?id=' . $actaId . '&download=1');
 } catch (Throwable $e) {
     Session::addMessageAfterRedirect($e->getMessage(), false, ERROR);
-    Html::redirect('/plugins/actadeentrega/front/acta.form.php?users_id=' . (int)($_POST['users_id'] ?? 0));
+    $redirect = '/plugins/actadeentrega/front/acta.form.php?users_id=' . (int)($_POST['users_id'] ?? 0);
+    if ((int)($_POST['from_user'] ?? 0) === 1) {
+        $redirect .= '&from_user=1';
+    }
+    Html::redirect($redirect);
 }
