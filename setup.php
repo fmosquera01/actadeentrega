@@ -15,6 +15,7 @@ function plugin_init_actadeentrega(): void
     $PLUGIN_HOOKS['csrf_compliant']['actadeentrega'] = true;
     $PLUGIN_HOOKS['menu_entry']['actadeentrega'] = true;
     $PLUGIN_HOOKS['menu_toadd']['actadeentrega'] = ['plugins' => [PluginActadeentregaMenu::class]];
+    Plugin::registerClass(PluginActadeentregaMenu::class);
     Plugin::registerClass(PluginActadeentregaActa::class);
     Plugin::registerClass(PluginActadeentregaProfile::class, ['addtabon' => ['Profile']]);
 }
