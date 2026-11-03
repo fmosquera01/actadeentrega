@@ -223,15 +223,17 @@ class ActaEntregaPdfRenderer
         $p->SetXY(81, $y);
         $p->Cell(433, 17, 'FIRMA RESPONSABLE', 1, 0, 'L');
         $y += 27;
-        $x = 120.0; $nameW = 239.0; $sigW = 163.0; $rowH = 28.0;
-        foreach ($names as $name) {
-            $p->Rect($x, $y, $nameW, $rowH);
-            $p->Rect($x + $nameW, $y, $sigW, $rowH);
-            $p->SetFont('helvetica', 'B', 8.5);
-            $p->MultiCell($nameW, $rowH, $name, 0, 'C', false, 0, $x, $y, true, 0, false, true, $rowH, 'M');
-            $y += $rowH;
-        }
-        return $y;
+        $x = 120.0;
+        $nameW = 239.0;
+        $sigW = 163.0;
+        // Un solo bloque: nombres apilados en la celda izquierda y una única
+        // celda amplia a la derecha para recoger todas las firmas manuscritas.
+        $rowH = max(28.0, count($names) * 14.0);
+        $p->Rect($x, $y, $nameW, $rowH);
+        $p->Rect($x + $nameW, $y, $sigW, $rowH);
+        $p->SetFont('helvetica', 'B', 8.5);
+        $p->MultiCell($nameW, $rowH, implode("\\n", $names), 0, 'C', false, 0, $x, $y, true, 0, false, true, $rowH, 'M');
+        return $y + $rowH;
     }
 
     /* -------------------------------------------------- bloques de firma */
