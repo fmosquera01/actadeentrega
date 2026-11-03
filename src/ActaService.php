@@ -5,6 +5,8 @@ final class PluginActadeentregaActaService
 {
     public const MANAGER_TABLE = 'glpi_plugin_fields_locationsgerentes';
     public const MANAGER_FIELD = 'users_id_gerentefield';
+    public const MANAGER_CONTAINER_ID = 10;
+    public const MANAGER_FIELD_ID = 14;
 
     private const TYPE_TABLES = [\n        'Computer' => 'glpi_computertypes', 'Monitor' => 'glpi_monitortypes', 'Phone' => 'glpi_phonetypes',\n        'Printer' => 'glpi_printertypes', 'Peripheral' => 'glpi_peripheraltypes',\n        'NetworkEquipment' => 'glpi_networkequipmenttypes', 'PDU' => 'glpi_pdutypes',\n        'Enclosure' => 'glpi_enclosuretypes', 'Rack' => 'glpi_racktypes',\n    ];\n\n    private const ASSET_TYPES = [
         'Computer' => ['table' => 'glpi_computers', 'label' => 'COMPUTADORA', 'model' => 'computermodels_id', 'type' => 'computertypes_id'],
@@ -56,7 +58,7 @@ final class PluginActadeentregaActaService
         $row = $DB->request([
             'SELECT' => [self::MANAGER_FIELD],
             'FROM' => self::MANAGER_TABLE,
-            'WHERE' => ['locations_id' => $locationId],
+            'WHERE' => ['items_id' => $locationId, 'itemtype' => 'Location', 'plugin_fields_containers_id' => self::MANAGER_CONTAINER_ID],
             'LIMIT' => 1,
         ])->current();
         $managerId = (int) ($row[self::MANAGER_FIELD] ?? 0);
