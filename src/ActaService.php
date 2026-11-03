@@ -82,7 +82,8 @@ final class PluginActadeentregaActaService
                 'ORDER' => ['name ASC'],
             ]) as $row) {
                 $row['_itemtype'] = $itemtype;
-                $row['_label'] = $config['label'];\n                $typeId = (int) ($row[$config['type']] ?? 0);\n                $typeTable = self::TYPE_TABLES[$itemtype] ?? '';\n                if ($typeId > 0 && $typeTable !== '') {\n                    $typeName = (string) Dropdown::getDropdownName($typeTable, $typeId);\n                    if ($typeName !== '') $row['_label'] = mb_strtoupper($typeName);\n                }
+                $row['_label'] = $config['label'];
+                $typeId = (int) ($row[$config['type']] ?? 0);\n                $typeTable = self::TYPE_TABLES[$itemtype] ?? '';\n                if ($typeId > 0 && $typeTable !== '') {\n                    $typeName = (string) Dropdown::getDropdownName($typeTable, $typeId);\n                    if ($typeName !== '') $row['_label'] = mb_strtoupper($typeName);\n                }
                 $row['_table'] = $table;
                 $row['_model_field'] = $config['model'];
                 $assets[] = $row;
