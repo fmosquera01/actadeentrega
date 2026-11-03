@@ -13,7 +13,7 @@ try {
     $issuerId = (int) Session::getLoginUserID();
     $user = PluginActadeentregaActaService::getUser($userId);
     if (!$user) throw new RuntimeException('No se encontró el colaborador seleccionado.');
-    $selectedIds = array_values(array_unique(array_filter(array_map('intval', (array)($_POST['assets'] ?? [])))));
+    $selectedKeys = array_values(array_unique(array_filter(array_map('strval', (array)($_POST['assets'] ?? [])))));
     $available = PluginActadeentregaActaService::getAssets($userId);
     $selected = array_values(array_filter($available, static fn($a) => in_array((int)$a['id'], $selectedIds, true)));
     if (count($selected) !== count($selectedIds)) throw new RuntimeException('La selección contiene activos que ya no están asignados actualmente al colaborador. Actualice la pantalla.');
