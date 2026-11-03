@@ -25,9 +25,16 @@ final class PluginActadeentregaActa extends CommonDBTM
         $userId = (int)$item->getID();
         echo "<div class='d-flex justify-content-between align-items-center mb-3'><h3>Actas de entrega del colaborador</h3>";
         if (Session::haveRight(self::$rightname, CREATE)) {
-            echo "<a class='btn btn-primary' href='/plugins/actadeentrega/front/acta.form.php?from_user=1&users_id=" . $userId . "'>Nueva acta</a>";
+            echo "<a class='btn btn-primary' href='/front/user.form.php?id=" . $userId . "&forcetab=PluginActadeentregaActa$1&acta_action=new'>Nueva acta</a>";
         }
         echo "</div>";
+        if (($_GET['acta_action'] ?? '') === 'new') {
+            $_GET['users_id'] = $userId;
+            $_GET['from_user'] = 1;
+            $_GET['embedded'] = 1;
+            require __DIR__ . '/../front/acta.form.php';
+            return true;
+        }
         $ids = [];
         if ($DB->tableExists('glpi_plugin_actadeentrega_acta_users')) {
             foreach ($DB->request(['SELECT' => ['plugin_actadeentrega_actas_id'], 'FROM' => 'glpi_plugin_actadeentrega_acta_users', 'WHERE' => ['users_id' => $userId]]) as $r) {
