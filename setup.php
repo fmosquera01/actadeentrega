@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-define('PLUGIN_ACTADEENTREGA_VERSION', '0.1.4');
+define('PLUGIN_ACTADEENTREGA_VERSION', '0.1.5');
 
 require_once __DIR__ . '/src/ActaService.php';
 require_once __DIR__ . '/src/ActaPdf.php';
@@ -42,8 +42,8 @@ function plugin_actadeentrega_check_prerequisites(): bool
 function plugin_actadeentrega_check_config(): bool { return true; }
 
 /**
- * Upgrade hook. Version 0.1.4 switches PDF generation to the institutional
- * ActaEntregaPdfRenderer and uses the Songa logo; no database migration is required.
+ * Upgrade hook. Version 0.1.5 compacts equipment description rows and reduces the gap before clauses.
+ * No database migration is required.
  */
 function plugin_actadeentrega_update(string $oldVersion): bool
 {
