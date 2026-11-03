@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-define('PLUGIN_ACTADEENTREGA_VERSION', '0.1.8');
+define('PLUGIN_ACTADEENTREGA_VERSION', '0.1.9');
 
 require_once __DIR__ . '/src/ActaService.php';
 require_once __DIR__ . '/src/ActaPdf.php';
@@ -42,8 +42,7 @@ function plugin_actadeentrega_check_prerequisites(): bool
 function plugin_actadeentrega_check_config(): bool { return true; }
 
 /**
- * Upgrade hook. Version 0.1.6 applies the corrected institutional PDF layout, dynamic equipment row heights,
- * and normalized equipment text. No database migration is required.
+ * Version 0.1.9 includes co-responsible participants, user-profile history, and automatic PDF download.
  */
 function plugin_actadeentrega_update(string $oldVersion): bool
 {
