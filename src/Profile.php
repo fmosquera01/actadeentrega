@@ -1,10 +1,6 @@
 <?php
 declare(strict_types=1);
 
-use CommonGLPI;
-use Html;
-use Session;
-
 /**
  * Permisos nativos por perfil de GLPI.
  *
