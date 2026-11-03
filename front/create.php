@@ -47,7 +47,7 @@ try {
     $DB->beginTransaction();
     try {
         $last = 0;
-        foreach ($DB->request(['SELECT'=>['act_number'],'FROM'=>'glpi_plugin_actadeentrega_acts','WHERE'=>['act_number'=>['LIKE', $prefix.'%']],'ORDER'=>['id DESC'],'LIMIT'=>1]) as $r) {
+        foreach ($DB->request(['SELECT'=>['act_number'],'FROM'=>'glpi_plugin_actadeentrega_actas','WHERE'=>['act_number'=>['LIKE', $prefix.'%']],'ORDER'=>['id DESC'],'LIMIT'=>1]) as $r) {
             $last = (int)substr((string)$r['act_number'], strlen($prefix));
         }
         $number = $prefix . str_pad((string)($last + 1), 5, '0', STR_PAD_LEFT);
@@ -58,7 +58,7 @@ try {
         PluginActadeentregaActaPdf::generate($snapshot, $signature['path'], $path);
         $hash = hash_file('sha256', $path);
         if (!$hash) throw new RuntimeException('No se pudo verificar la integridad del PDF.');
-        $DB->insert('glpi_plugin_actadeentrega_acts', [
+        $DB->insert('glpi_plugin_actadeentrega_actas', [
             'act_number'=>$number, 'entities_id'=>(int)($_SESSION['glpiactive_entity'] ?? 0),
             'recipient_users_id'=>$userId, 'issuer_users_id'=>$issuerId,
             'act_date'=>$now, 'snapshot'=>json_encode($snapshot, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR),
