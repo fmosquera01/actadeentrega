@@ -6,7 +6,7 @@ final class PluginActadeentregaActaService
     public const MANAGER_TABLE = 'glpi_plugin_fields_locationsgerentes';
     public const MANAGER_FIELD = 'users_id_gerentefield';
 
-    private const ASSET_TYPES = [
+    private const TYPE_TABLES = [\n        'Computer' => 'glpi_computertypes', 'Monitor' => 'glpi_monitortypes', 'Phone' => 'glpi_phonetypes',\n        'Printer' => 'glpi_printertypes', 'Peripheral' => 'glpi_peripheraltypes',\n        'NetworkEquipment' => 'glpi_networkequipmenttypes', 'PDU' => 'glpi_pdutypes',\n        'Enclosure' => 'glpi_enclosuretypes', 'Rack' => 'glpi_racktypes',\n    ];\n\n    private const ASSET_TYPES = [
         'Computer' => ['table' => 'glpi_computers', 'label' => 'COMPUTADORA', 'model' => 'computermodels_id', 'type' => 'computertypes_id'],
         'Monitor' => ['table' => 'glpi_monitors', 'label' => 'MONITOR', 'model' => 'monitormodels_id', 'type' => 'monitortypes_id'],
         'Phone' => ['table' => 'glpi_phones', 'label' => 'TELÉFONO', 'model' => 'phonemodels_id', 'type' => 'phonestypes_id'],
@@ -80,7 +80,7 @@ final class PluginActadeentregaActaService
                 'ORDER' => ['name ASC'],
             ]) as $row) {
                 $row['_itemtype'] = $itemtype;
-                $row['_label'] = $config['label'];
+                $row['_label'] = $config['label'];\n                $typeId = (int) ($row[$config['type']] ?? 0);\n                $typeTable = self::TYPE_TABLES[$itemtype] ?? '';\n                if ($typeId > 0 && $typeTable !== '') {\n                    $typeName = (string) Dropdown::getDropdownName($typeTable, $typeId);\n                    if ($typeName !== '') $row['_label'] = mb_strtoupper($typeName);\n                }
                 $row['_table'] = $table;
                 $row['_model_field'] = $config['model'];
                 $assets[] = $row;
@@ -110,6 +110,34 @@ final class PluginActadeentregaActaService
         $comment = trim((string) ($asset['comment'] ?? ''));
         if ($comment !== '') $parts[] = 'Comentario: ' . $comment;
         return implode("\n", $parts);
+    }
+
+
+    private static function computerSpecifications(int $computerId): array
+    {
+        if ($computerId < 1) return [];
+        $builder = 'GlpiPlugin\\Informeglopi\\AssetSnapshotBuilder';
+        if (!class_exists($builder)) {
+            $file = GLPI_ROOT . '/plugins/informeglpi/src/AssetSnapshotBuilder.php';
+            if (is_file($file)) require_once $file;
+        }
+        if (!class_exists($builder)) return [];
+        try {
+            $computer = new Computer();
+            if (!$computer->getFromDB($computerId)) return [];
+            $snapshot = $builder::build($computer);
+            $components = $snapshot['components'] ?? [];
+            $lines = [];
+            foreach (['processors' => 'Procesador', 'memories' => 'Memoria RAM', 'hard_drives' => 'Almacenamiento'] as $key => $label) {
+                foreach (($components[$key] ?? []) as $component) {
+                    $detail = trim((string)($component['device']['report_label'] ?? ''));
+                    if ($detail !== '') $lines[] = $label . ': ' . $detail;
+                }
+            }
+            return $lines;
+        } catch (Throwable $e) {
+            return [];
+        }
     }
 
     public static function missing(array $user, array $assets, bool $signatureExists): array
