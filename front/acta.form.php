@@ -34,7 +34,7 @@ if ($user) {
     echo "<div class='table-responsive'><table class='table table-sm table-hover table-bordered'><thead><tr><th>Incluir</th><th>Tipo</th><th>Serie</th><th>Descripción del equipo</th><th>Activo fijo</th></tr></thead><tbody>";
     foreach ($assets as $a) {
         $desc = PluginActadeentregaActaService::describeAsset($a);
-        echo '<tr><td><input class="form-check-input" type="checkbox" name="assets[]" value="' . (int)$a['id'] . '"></td><td>' . htmlspecialchars($a['_label'], ENT_QUOTES, 'UTF-8') . '</td><td>' . htmlspecialchars((string)$a['serial'], ENT_QUOTES, 'UTF-8') . '</td><td>' . nl2br(htmlspecialchars($desc, ENT_QUOTES, 'UTF-8')) . '</td><td>' . htmlspecialchars((string)($a['otherserial'] ?: 'N/A'), ENT_QUOTES, 'UTF-8') . '</td></tr>';
+        echo '<tr><td><input class="form-check-input" type="checkbox" name="assets[]" value="' . htmlspecialchars($a['_itemtype'] . ':' . (int)$a['id'], ENT_QUOTES, 'UTF-8') . '"></td><td>' . htmlspecialchars($a['_label'], ENT_QUOTES, 'UTF-8') . '</td><td>' . htmlspecialchars((string)$a['serial'], ENT_QUOTES, 'UTF-8') . '</td><td>' . nl2br(htmlspecialchars($desc, ENT_QUOTES, 'UTF-8')) . '</td><td>' . htmlspecialchars((string)($a['otherserial'] ?: 'N/A'), ENT_QUOTES, 'UTF-8') . '</td></tr>';
     }
     if (!$assets) echo "<tr><td colspan='5'>No se encontraron activos con asignación actual a este colaborador.</td></tr>";
     echo "</tbody></table></div><div class='mt-3' style='max-width:320px'><label class='form-label'>PIN personal para autorizar la firma del técnico</label><input type='password' class='form-control' name='signature_pin' inputmode='numeric' pattern='[0-9]{6}' maxlength='6' required></div>";
