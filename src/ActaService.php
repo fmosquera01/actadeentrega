@@ -115,6 +115,9 @@ final class PluginActadeentregaActaService
             };
             if ($modelTable !== '') $parts[] = 'Modelo: ' . Dropdown::getDropdownName($modelTable, $modelId);
         }
+        if (($asset['_itemtype'] ?? '') === 'Computer') {
+            $parts = array_merge($parts, self::computerSpecifications((int)($asset['id'] ?? 0)));
+        }
         $comment = trim((string) ($asset['comment'] ?? ''));
         if ($comment !== '') $parts[] = 'Comentario: ' . $comment;
         return implode("\n", $parts);
