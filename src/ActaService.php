@@ -82,7 +82,12 @@ final class PluginActadeentregaActaService
             'WHERE' => ['items_id' => $locationId, 'itemtype' => 'Location', 'plugin_fields_containers_id' => self::MANAGER_CONTAINER_ID],
             'LIMIT' => 1,
         ])->current();
-        $managerId = (int) ($row[self::MANAGER_FIELD] ?? 0);
+        $managerValue = $row[self::MANAGER_FIELD] ?? 0;
+        if (is_string($managerValue) && str_starts_with(trim($managerValue), '[')) {
+            $decoded = json_decode($managerValue, true);
+            $managerValue = is_array($decoded) ? ($decoded[0] ?? 0) : 0;
+        }
+        $managerId = (int) $managerValue;
         return $managerId > 0 ? getUserName($managerId) : '';
     }
 
