@@ -15,8 +15,8 @@ try {
     if (!$user) throw new RuntimeException('No se encontró el colaborador seleccionado.');
     $selectedKeys = array_values(array_unique(array_filter(array_map('strval', (array)($_POST['assets'] ?? [])))));
     $available = PluginActadeentregaActaService::getAssets($userId);
-    $selected = array_values(array_filter($available, static fn($a) => in_array((int)$a['id'], $selectedIds, true)));
-    if (count($selected) !== count($selectedIds)) throw new RuntimeException('La selección contiene activos que ya no están asignados actualmente al colaborador. Actualice la pantalla.');
+    $selected = array_values(array_filter($available, static fn($a) => in_array($a['_itemtype'] . ':' . (int)$a['id'], $selectedKeys, true)));
+    if (count($selected) !== count($selectedKeys)) throw new RuntimeException('La selección contiene activos que ya no están asignados actualmente al colaborador. Actualice la pantalla.');
     $signature = PluginActadeentregaActaService::authorizeSignature($issuerId, (string)($_POST['signature_pin'] ?? ''));
     $missing = PluginActadeentregaActaService::missing($user, $selected, true);
     if ($missing) throw new RuntimeException("No se puede generar el acta. Complete en GLPI:\n• " . implode("\n• ", $missing));
