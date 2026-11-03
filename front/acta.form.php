@@ -5,7 +5,10 @@ include('../../../inc/includes.php');
 Session::checkRight('plugin_actadeentrega', CREATE);
 require_once __DIR__ . '/../src/ActaService.php';
 
-Html::header('Nueva acta de entrega', $_SERVER['PHP_SELF'], 'plugins', 'PluginActadeentregaMenu');
+$embeddedInUser = ((int)($_GET['embedded'] ?? 0) === 1);
+if (!$embeddedInUser) {
+    Html::header('Nueva acta de entrega', $_SERVER['PHP_SELF'], 'plugins', 'PluginActadeentregaMenu');
+}
 
 global $DB;
 $userId = (int) ($_GET['users_id'] ?? 0);
@@ -31,6 +34,9 @@ echo "</div>";
 echo "<form method='get' class='card card-body mb-3'>";
 if ($fromUser) {
     echo "<input type='hidden' name='from_user' value='1'>";
+}
+if ($embeddedInUser) {
+    echo "<input type='hidden' name='embedded' value='1'><input type='hidden' name='acta_action' value='new'>";
 }
 echo "<label class='form-label fw-semibold'>Colaborador titular</label>";
 User::dropdown([
@@ -64,10 +70,8 @@ if ($user) {
         User::dropdown([
             'name' => 'co_responsible_users',
             'multiple' => true,
-            'values' => [],
+            'value' => [],
             'right' => 'all',
-            'entity' => -1,
-            'entity_sons' => true,
             'display' => true,
             'width' => '100%',
         ]);
@@ -88,4 +92,6 @@ if ($user) {
     if (!$signatureExists) echo "<div class='alert alert-warning mt-3'>No tiene firma personal registrada. Regístrela desde su perfil de GLPI en la pestaña Firma personal del plugin Informe Técnico.</div>";
 }
 echo "</div>";
-Html::footer();
+if (!$embeddedInUser) {
+    Html::footer();
+}
