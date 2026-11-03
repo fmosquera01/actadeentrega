@@ -5,7 +5,7 @@ include('../../../inc/includes.php');
 Session::checkRight('plugin_actadeentrega', READ);
 global $DB;
 $id = (int)($_GET['id'] ?? 0);
-$row = $DB->request(['SELECT'=>['pdf_path','pdf_sha256'],'FROM'=>'glpi_plugin_actadeentrega_acts','WHERE'=>['id'=>$id],'LIMIT'=>1])->current();
+$row = $DB->request(['SELECT'=>['pdf_path','pdf_sha256'],'FROM'=>'glpi_plugin_actadeentrega_actas','WHERE'=>['id'=>$id],'LIMIT'=>1])->current();
 if (!$row) Html::displayNotFoundError();
 $base = realpath(rtrim(GLPI_VAR_DIR, DIRECTORY_SEPARATOR) . '/_plugins/actadeentrega/acts');
 $path = realpath(rtrim(GLPI_VAR_DIR, DIRECTORY_SEPARATOR) . '/' . ltrim((string)$row['pdf_path'], '/'));
