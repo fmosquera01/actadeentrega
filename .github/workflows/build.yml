@@ -1,0 +1,25 @@
+name: Build and validate plugin
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate PHP syntax
+        run: |
+          find . -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: Package plugin
+        run: |
+          mkdir -p dist
+          zip -r dist/actadeentrega-glpi11.zip setup.php hook.php src front README.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: actadeentrega-glpi11
+          path: dist/actadeentrega-glpi11.zip
+          if-no-files-found: error
