@@ -25,7 +25,7 @@ final class PluginActadeentregaActa extends CommonDBTM
         $userId = (int)$item->getID();
         echo "<div class='d-flex justify-content-between align-items-center mb-3'><h3>Actas de entrega del colaborador</h3>";
         if (Session::haveRight(self::$rightname, CREATE)) {
-            echo "<a class='btn btn-primary' href='/plugins/actadeentrega/front/acta.form.php?users_id=" . $userId . "'>Nueva acta</a>";
+            echo "<a class='btn btn-primary' href='/plugins/actadeentrega/front/acta.form.php?from_user=1&users_id=" . $userId . "'>Nueva acta</a>";
         }
         echo "</div>";
         $ids = [];
