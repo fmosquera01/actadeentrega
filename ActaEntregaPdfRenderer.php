@@ -47,7 +47,7 @@ class ActaEntregaPdfRenderer
         $y = $this->header($d);
         $y = $this->datos($d, $y);
         $y = $this->equipos($d, $y + 8);
-        $y = $this->clausulas($d, $y + 12);
+        $y = $this->clausulas($d, $y + 2);
         $y = $this->firmaBloque('FIRMA DEL RESPONSABLE', $d['responsable'] ?? '', $d['firma_responsable'] ?? null, $y + 10);
         $y = $this->firmaBloque('FIRMA DEL GERENTE O JEFE DE AREA', $d['gerente'] ?? '', $d['firma_gerente'] ?? null, $y + 12);
         $this->entrega($d, $y + 12);
@@ -150,7 +150,7 @@ class ActaEntregaPdfRenderer
 
             $p->SetFont('helvetica', '', 8);
             $plain = ($codigo !== '' ? $codigo . ': ' : '') . $texto;
-            $h = max(13.0, $p->getStringHeight($w[3] - 8, $plain) + 3);
+            $h = max(13.0, $p->getStringHeight($w[3] - 8, $plain));
 
             $p->SetTextColor(64, 64, 64);
             $cells = [
