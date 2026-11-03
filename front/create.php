@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 include('../../../inc/includes.php');
 Session::checkRight('plugin_actadeentrega', CREATE);
-Session::checkCSRF();
+Session::checkCSRF($_POST);
 require_once __DIR__ . '/../src/ActaService.php';
 require_once __DIR__ . '/../src/ActaPdf.php';
 
