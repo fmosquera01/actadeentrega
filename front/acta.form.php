@@ -68,7 +68,7 @@ if ($user) {
         echo "<div class='card card-body mb-3' style='max-width:900px'><label class='form-label fw-semibold'>Otros colaboradores responsables</label>";
         echo "<p class='text-muted small mb-2'>Escriba el nombre y seleccione uno o varios colaboradores. Puede agregar varios en el mismo campo, igual que en los participantes de un ticket.</p>";
         User::dropdown([
-            'name' => 'co_responsible_users',
+            'name' => 'co_responsible_users[]',
             'multiple' => true,
             'value' => [],
             'right' => 'all',
