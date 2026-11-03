@@ -48,7 +48,7 @@ class ActaEntregaPdfRenderer
         $y = $this->datos($d, $y);
         $y = $this->equipos($d, $y + 8);
         $y = $this->clausulas($d, $y + 12);
-        $y = $this->firmaBloque('FIRMA DEL RESPONSABLE', $d['responsable'] ?? '', $d['firma_responsable'] ?? null, $y + 10);
+        $y = $this->firmaResponsables((string)($d['responsable'] ?? ''), $y + 10);
         $y = $this->firmaBloque('FIRMA DEL GERENTE O JEFE DE AREA', $d['gerente'] ?? '', $d['firma_gerente'] ?? null, $y + 12);
         $this->entrega($d, $y + 12);
 
@@ -206,6 +206,30 @@ class ActaEntregaPdfRenderer
             $p->Rect(107, $y + 3.6, 3.4, 3.4, 'F');
             $p->MultiCell($textW, $h, $c, 0, 'L', false, 1, $textX, $y, true, 0, false, true, $h, 'T');
             $y += $h + 1.5;
+        }
+        return $y;
+    }
+
+    /* Todos los colaboradores aparecen a la izquierda; el espacio derecho queda libre para firmas manuscritas. */
+    private function firmaResponsables(string $nombres, float $y): float
+    {
+        $p = $this->pdf;
+        $names = array_values(array_filter(array_map('trim', preg_split('/\\r?\\n/', $nombres))));
+        if (!$names) $names = [''];
+        $p->SetDrawColor(0, 0, 0);
+        $p->SetLineWidth(0.6);
+        $p->SetTextColor(0, 0, 0);
+        $p->SetFont('helvetica', 'B', 10.5);
+        $p->SetXY(81, $y);
+        $p->Cell(433, 17, 'FIRMA RESPONSABLE', 1, 0, 'L');
+        $y += 27;
+        $x = 120.0; $nameW = 239.0; $sigW = 163.0; $rowH = 28.0;
+        foreach ($names as $name) {
+            $p->Rect($x, $y, $nameW, $rowH);
+            $p->Rect($x + $nameW, $y, $sigW, $rowH);
+            $p->SetFont('helvetica', 'B', 8.5);
+            $p->MultiCell($nameW, $rowH, $name, 0, 'C', false, 0, $x, $y, true, 0, false, true, $rowH, 'M');
+            $y += $rowH;
         }
         return $y;
     }

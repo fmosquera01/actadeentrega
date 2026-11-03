@@ -44,7 +44,7 @@ final class PluginActadeentregaActaPdf
         $renderData = [
             'logo' => $logoPath,
             'gerente' => (string)($user['manager'] ?? ''),
-            'responsable' => (string)($user['recipient'] ?? ''),
+            'responsable' => implode("\n", array_values(array_filter(array_map(static fn($p) => (string)($p['name'] ?? ''), $snapshot['participants'] ?? [['name' => ($user['recipient'] ?? '')]])))),
             'cargo' => (string)($user['jobtitle'] ?? ''),
             'area' => (string)($user['area'] ?? ''),
             'fecha' => $dateLabel,

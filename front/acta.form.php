@@ -4,7 +4,7 @@ declare(strict_types=1);
 include('../../../inc/includes.php');
 Session::checkRight('plugin_actadeentrega', CREATE);
 require_once __DIR__ . '/../src/ActaService.php';
-Html::header('Nueva acta de entrega', $_SERVER['PHP_SELF'], 'management', 'PluginActadeentregaMenu');
+Html::header('Nueva acta de entrega', $_SERVER['PHP_SELF'], 'plugins', 'PluginActadeentregaMenu');
 
 global $DB;
 $userId = (int) ($_GET['users_id'] ?? 0);
@@ -16,7 +16,7 @@ if ($DB->tableExists('glpi_plugin_informeglopi_user_signatures')) {
     $signatureExists = $DB->request(['COUNT' => 'c', 'FROM' => 'glpi_plugin_informeglopi_user_signatures', 'WHERE' => ['users_id' => Session::getLoginUserID()]])->current()['c'] > 0;
 }
 echo "<div class='container-fluid'><h2>Nueva acta de entrega</h2>";
-echo "<form method='get' class='mb-3'><label class='form-label'>Colaborador</label><select class='form-select' style='max-width:520px' name='users_id' onchange='this.form.submit()'><option value=''>Seleccione...</option>";
+echo "<form method='get' class='mb-3'><label class='form-label'>Colaborador</label><select class='form-select select2' style='max-width:520px' name='users_id' onchange='this.form.submit()'><option value=''>Seleccione...</option>";
 foreach ($DB->request(['SELECT' => ['id','name','firstname','realname'],'FROM'=>'glpi_users','WHERE'=>['is_deleted'=>0,'is_active'=>1],'ORDER'=>['realname ASC','firstname ASC']]) as $row) {
     $name = trim(($row['firstname'] ?? '') . ' ' . ($row['realname'] ?? ''));
     if ($name === '') $name = $row['name'];
@@ -24,6 +24,14 @@ foreach ($DB->request(['SELECT' => ['id','name','firstname','realname'],'FROM'=>
 }
 echo "</select></form>";
 if ($user) {
+    echo "<div class='mb-3' style='max-width:760px'><label class='form-label'>Otros colaboradores responsables (opcional)</label><select class='form-select select2' name='co_responsible_users[]' multiple data-placeholder='Buscar y seleccionar colaboradores'>";
+    foreach ($DB->request(['SELECT' => ['id','name','firstname','realname'],'FROM'=>'glpi_users','WHERE'=>['is_deleted'=>0,'is_active'=>1],'ORDER'=>['realname ASC','firstname ASC']]) as $co) {
+        if ((int)$co['id'] === $userId) continue;
+        $coName = trim(($co['firstname'] ?? '') . ' ' . ($co['realname'] ?? ''));
+        if ($coName === '') $coName = $co['name'];
+        echo '<option value="' . (int)$co['id'] . '">' . htmlspecialchars($coName, ENT_QUOTES, 'UTF-8') . '</option>';
+    }
+    echo "</select><small class='form-text text-muted'>Los colaboradores adicionales quedarán registrados como corresponsables únicamente en esta acta. La asignación del activo en GLPI no cambiará.</small></div>";
     echo "<h3>Datos recuperados de GLPI</h3><table class='table table-sm table-bordered' style='max-width:900px'>";
     foreach (['recipient'=>'Responsable','department'=>'Departamento','jobtitle'=>'Cargo','supervisor'=>'Jefe / Supervisor','area'=>'Área / Ubicación','manager'=>'Gerente (ubicación o supervisor)'] as $key=>$label) {
         $value = trim((string)($user[$key] ?? ''));

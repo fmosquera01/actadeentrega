@@ -16,6 +16,13 @@ try {
     $available = PluginActadeentregaActaService::getAssets($userId);
     $selected = array_values(array_filter($available, static fn($a) => in_array($a['_itemtype'] . ':' . (int)$a['id'], $selectedKeys, true)));
     if (count($selected) !== count($selectedKeys)) throw new RuntimeException('La selección contiene activos que ya no están asignados actualmente al colaborador. Actualice la pantalla.');
+    $coIds = array_values(array_unique(array_filter(array_map('intval', (array)($_POST['co_responsible_users'] ?? [])), static fn($id) => $id > 0 && $id !== $userId)));
+    $participants = [['users_id' => $userId, 'name' => $user['recipient'], 'is_holder' => 1]];
+    foreach ($coIds as $coId) {
+        $coUser = PluginActadeentregaActaService::getUser($coId);
+        if (!$coUser) throw new RuntimeException('Uno de los colaboradores adicionales no existe o está inactivo.');
+        $participants[] = ['users_id' => $coId, 'name' => $coUser['recipient'], 'is_holder' => 0];
+    }
     $signature = PluginActadeentregaActaService::authorizeSignature($issuerId, (string)($_POST['signature_pin'] ?? ''));
     $missing = PluginActadeentregaActaService::missing($user, $selected, true);
     if ($missing) throw new RuntimeException("No se puede generar el acta. Complete en GLPI:\n• " . implode("\n• ", $missing));
@@ -39,6 +46,7 @@ try {
             'supervisor' => $user['supervisor'], 'area' => $user['area'], 'manager' => $user['manager'],
         ],
         'issuer' => ['users_id' => $issuerId, 'name' => getUserName($issuerId), 'signature_sha256' => $signature['sha256']],
+        'participants' => $participants,
         'assets' => $assets,
     ];
     $year = date('Y');
@@ -63,14 +71,23 @@ try {
             'act_date'=>$now, 'snapshot'=>json_encode($snapshot, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR),
             'pdf_path'=>'_plugins/actadeentrega/acts/'.$file, 'pdf_sha256'=>$hash,
         ]);
+        $actaId = (int)$DB->insert_id();
+        foreach ($participants as $order => $participant) {
+            $DB->insert('glpi_plugin_actadeentrega_acta_users', [
+                'plugin_actadeentrega_actas_id' => $actaId,
+                'users_id' => (int)$participant['users_id'],
+                'is_holder' => (int)$participant['is_holder'],
+                'sort_order' => $order,
+            ]);
+        }
         $DB->commit();
     } catch (Throwable $e) {
         $DB->rollBack();
         if (isset($path) && is_file($path)) @unlink($path);
         throw $e;
     }
-    Session::addMessageAfterRedirect('Acta ' . $number . ' generada correctamente.', true, INFO);
-    Html::redirect('/plugins/actadeentrega/front/history.php');
+    Session::addMessageAfterRedirect('Acta ' . $number . ' generada correctamente. Se descargará el PDF.', true, INFO);
+    Html::redirect('/plugins/actadeentrega/front/pdf.php?id=' . $actaId . '&download=1');
 } catch (Throwable $e) {
     Session::addMessageAfterRedirect($e->getMessage(), false, ERROR);
     Html::redirect('/plugins/actadeentrega/front/acta.form.php?users_id=' . (int)($_POST['users_id'] ?? 0));

@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 include('../../../inc/includes.php');
 Session::checkRight('plugin_actadeentrega', READ);
-Html::header('Actas de Entrega', $_SERVER['PHP_SELF'], 'management', 'PluginActadeentregaMenu');
+Html::header('Actas de Entrega', $_SERVER['PHP_SELF'], 'plugins', 'PluginActadeentregaMenu');
 
 global $DB;
 echo "<div class='container-fluid'><h2>Actas de Entrega</h2>";

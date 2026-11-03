@@ -35,6 +35,20 @@ function plugin_actadeentrega_install(): bool
         ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}");
     }
 
+    $participants = 'glpi_plugin_actadeentrega_acta_users';
+    if (!$DB->tableExists($participants)) {
+        $migration->addPostQuery("CREATE TABLE IF NOT EXISTS `{$participants}` (
+            `id` int unsigned NOT NULL AUTO_INCREMENT,
+            `plugin_actadeentrega_actas_id` int unsigned NOT NULL,
+            `users_id` int unsigned NOT NULL,
+            `is_holder` tinyint NOT NULL DEFAULT 0,
+            `sort_order` int unsigned NOT NULL DEFAULT 0,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `uniq_acta_user` (`plugin_actadeentrega_actas_id`, `users_id`),
+            KEY `users_id` (`users_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}");
+    }
+
     $migration->executeMigration();
 
     // Register the plugin right for every existing profile, without

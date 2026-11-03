@@ -14,7 +14,7 @@ $hash = hash_file('sha256', $path);
 if (!$hash || !hash_equals((string)$row['pdf_sha256'], $hash)) Html::displayErrorAndDie('El PDF no superó la verificación de integridad.');
 header('Content-Type: application/pdf');
 header('Content-Length: ' . filesize($path));
-header('Content-Disposition: inline; filename="acta-entrega-' . $id . '.pdf"');
+header('Content-Disposition: ' . (!empty($_GET['download']) ? 'attachment' : 'inline') . '; filename="acta-entrega-' . $id . '.pdf"');
 header('X-Content-Type-Options: nosniff');
 header('Cache-Control: private, no-store');
 readfile($path);
