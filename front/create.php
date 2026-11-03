@@ -47,7 +47,7 @@ try {
     $DB->beginTransaction();
     try {
         $last = 0;
-        foreach ($DB->request(['SELECT'=>['act_number'],'FROM'=>'glpi_plugin_actadeentrega_acts','WHERE'=>['act_number'=>['LIKE'=>$prefix.'%']],'ORDER'=>['id DESC'],'LIMIT'=>1]) as $r) {
+        foreach ($DB->request(['SELECT'=>['act_number'],'FROM'=>'glpi_plugin_actadeentrega_acts','WHERE'=>['act_number'=>['LIKE', $prefix.'%']],'ORDER'=>['id DESC'],'LIMIT'=>1]) as $r) {
             $last = (int)substr((string)$r['act_number'], strlen($prefix));
         }
         $number = $prefix . str_pad((string)($last + 1), 5, '0', STR_PAD_LEFT);
