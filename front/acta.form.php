@@ -59,7 +59,7 @@ if ($user) {
     }
     echo "</table></div>";
     echo "<h3>Activos asignados actualmente</h3>";
-    echo "<form method='post' action='/plugins/actadeentrega/front/create.php'>";
+    echo "<form method='post' action='/plugins/actadeentrega/front/create.php' target='_blank' rel='noopener'>";
     echo "<input type='hidden' name='_glpi_csrf_token' value='" . Session::getNewCSRFToken(true) . "'>";
     echo "<input type='hidden' name='users_id' value='" . $userId . "'>";
     echo "<input type='hidden' name='from_user' value='" . ($fromUser ? '1' : '0') . "'>";
