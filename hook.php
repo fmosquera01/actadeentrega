@@ -14,7 +14,7 @@ function plugin_actadeentrega_install(): bool
     $charset = DBConnection::getDefaultCharset();
     $collation = DBConnection::getDefaultCollation();
 
-    $table = 'glpi_plugin_actadeentrega_acts';
+    $table = 'glpi_plugin_actadeentrega_actas';
 
     if (!$DB->tableExists($table)) {
         $migration->addPostQuery("CREATE TABLE IF NOT EXISTS `{$table}` (
