@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-define('PLUGIN_ACTADEENTREGA_VERSION', '0.1.9');
+define('PLUGIN_ACTADEENTREGA_VERSION', '0.2.0');
 
 require_once __DIR__ . '/src/ActaService.php';
 require_once __DIR__ . '/src/ActaPdf.php';
@@ -42,7 +42,7 @@ function plugin_actadeentrega_check_prerequisites(): bool
 function plugin_actadeentrega_check_config(): bool { return true; }
 
 /**
- * Version 0.1.9 includes co-responsible participants, user-profile history, and automatic PDF download.
+ * Version 0.2.0 formats asset descriptions and reads GLPI memory type, frequency and designation fields.
  */
 function plugin_actadeentrega_update(string $oldVersion): bool
 {
