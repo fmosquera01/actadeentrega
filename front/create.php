@@ -87,7 +87,8 @@ try {
         throw $e;
     }
     Session::addMessageAfterRedirect('Acta ' . $number . ' generada correctamente. Se descargará el PDF.', true, INFO);
-    Html::redirect('/plugins/actadeentrega/front/pdf.php?id=' . $actaId . '&download=1');
+    header('Location: /plugins/actadeentrega/front/pdf.php?id=' . $actaId, true, 303);
+    exit;
 } catch (Throwable $e) {
     Session::addMessageAfterRedirect($e->getMessage(), false, ERROR);
     $redirect = '/plugins/actadeentrega/front/acta.form.php?users_id=' . (int)($_POST['users_id'] ?? 0);
