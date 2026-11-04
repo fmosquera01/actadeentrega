@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-include('../../../inc/includes.php');
+// GLPI ya está inicializado: este formulario también se carga embebido desde la pestaña del usuario.
 Session::checkRight('plugin_actadeentrega', CREATE);
 require_once __DIR__ . '/../src/ActaService.php';
 
