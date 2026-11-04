@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 final class PluginActadeentregaActaService
 {
-    public const MANAGER_TABLE = 'glpi_plugin_fields_usercategoriesgerente2';
+    public const MANAGER_TABLE = 'glpi_plugin_fields_usercategorygerentetwos';
     public const MANAGER_FIELD = 'users_id_gerentedeareafield';
     public const MANAGER_CONTAINER_ID = 12;
     public const MANAGER_FIELD_ID = 17;
