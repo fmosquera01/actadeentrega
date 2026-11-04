@@ -3,10 +3,10 @@ declare(strict_types=1);
 
 final class PluginActadeentregaActaService
 {
-    public const MANAGER_TABLE = 'glpi_plugin_fields_locationsgerentes';
-    public const MANAGER_FIELD = 'users_id_gerentefield';
-    public const MANAGER_CONTAINER_ID = 10;
-    public const MANAGER_FIELD_ID = 14;
+    public const MANAGER_TABLE = 'glpi_plugin_fields_usercategoriesgerente2';
+    public const MANAGER_FIELD = 'users_id_gerentedeareafield';
+    public const MANAGER_CONTAINER_ID = 12;
+    public const MANAGER_FIELD_ID = 17;
 
     private const ASSET_TYPES = [
         'Computer' => ['table' => 'glpi_computers', 'label' => 'COMPUTADORA', 'model' => 'computermodels_id', 'asset_type' => 'computertypes_id', 'asset_type_table' => 'glpi_computertypes'],
@@ -45,50 +45,53 @@ final class PluginActadeentregaActaService
         if ($row['recipient'] === '') $row['recipient'] = (string) $row['name'];
         $row['supervisor'] = trim(($row['sup_firstname'] ?? '') . ' ' . ($row['sup_realname'] ?? ''));
         if ($row['supervisor'] === '') $row['supervisor'] = (string) ($row['sup_login'] ?? '');
-        $row['manager'] = self::getLocationManager((int) $row['locations_id']);
-        if ($row['manager'] === '') $row['manager'] = $row['supervisor'];
+        // El gerente se obtiene de la categoría del usuario (departamento).
+        // El supervisor es un dato independiente y puede estar vacío.
+        $row['manager'] = self::getDepartmentManager((int) $row['usercategories_id']);
         return $row;
     }
 
-    private static function getLocationManager(int $locationId): string
+    private static function getDepartmentManager(int $categoryId): string
     {
         global $DB;
-        if ($locationId < 1 || !$DB->tableExists(self::MANAGER_TABLE)
-            || !$DB->fieldExists(self::MANAGER_TABLE, self::MANAGER_FIELD)) return '';
+        if ($categoryId < 1 || !$DB->tableExists(self::MANAGER_TABLE)
+            || !$DB->fieldExists(self::MANAGER_TABLE, self::MANAGER_FIELD)
+            || !$DB->fieldExists(self::MANAGER_TABLE, 'items_id')) {
+            return '';
+        }
+
+        // Verifica que el campo configurado corresponda al bloque y campo
+        // indicados en GLPI: Bloque -Gerente2 (12), campo (17).
         if ($DB->tableExists('glpi_plugin_fields_fields')) {
             $fieldMeta = $DB->request([
                 'SELECT' => ['id', 'plugin_fields_containers_id', 'name'],
                 'FROM' => 'glpi_plugin_fields_fields',
-                'WHERE' => ['id' => self::MANAGER_FIELD_ID, 'plugin_fields_containers_id' => self::MANAGER_CONTAINER_ID],
+                'WHERE' => [
+                    'id' => self::MANAGER_FIELD_ID,
+                    'plugin_fields_containers_id' => self::MANAGER_CONTAINER_ID,
+                ],
                 'LIMIT' => 1,
             ])->current();
-            if (!$fieldMeta || (string)$fieldMeta['name'] !== self::MANAGER_FIELD) return '';
-        }
-        // La tabla Fields puede estar vinculada directamente a Locations y no incluir
-        // una columna itemtype. Construimos el filtro según las columnas disponibles.
-        if (!$DB->fieldExists(self::MANAGER_TABLE, 'items_id')) return '';
-
-        $where = ['items_id' => $locationId];
-        if ($DB->fieldExists(self::MANAGER_TABLE, 'itemtype')) {
-            $where['itemtype'] = 'Location';
-        }
-        if ($DB->fieldExists(self::MANAGER_TABLE, 'plugin_fields_containers_id')) {
-            $where['plugin_fields_containers_id'] = self::MANAGER_CONTAINER_ID;
+            if (!$fieldMeta || (string)$fieldMeta['name'] !== self::MANAGER_FIELD) {
+                return '';
+            }
         }
 
         $row = $DB->request([
-            'SELECT' => [self::MANAGER_FIELD],
-            'FROM' => self::MANAGER_TABLE,
-            'WHERE' => $where,
+            'SELECT' => ['manager.firstname', 'manager.realname', 'manager.name'],
+            'FROM' => self::MANAGER_TABLE . ' AS department_fields',
+            'LEFT JOIN' => [
+                'glpi_users AS manager' => [
+                    'ON' => ['department_fields' => self::MANAGER_FIELD, 'manager' => 'id'],
+                ],
+            ],
+            'WHERE' => ['department_fields.items_id' => $categoryId],
             'LIMIT' => 1,
         ])->current();
-        $managerValue = $row[self::MANAGER_FIELD] ?? 0;
-        if (is_string($managerValue) && str_starts_with(trim($managerValue), '[')) {
-            $decoded = json_decode($managerValue, true);
-            $managerValue = is_array($decoded) ? ($decoded[0] ?? 0) : 0;
-        }
-        $managerId = (int) $managerValue;
-        return $managerId > 0 ? getUserName($managerId) : '';
+
+        if (!$row) return '';
+        $name = trim((string)($row['firstname'] ?? '') . ' ' . (string)($row['realname'] ?? ''));
+        return $name !== '' ? $name : trim((string)($row['name'] ?? ''));
     }
 
     public static function getAssets(int $userId): array
@@ -235,9 +238,8 @@ final class PluginActadeentregaActaService
             'recipient' => 'Responsable del equipo (usuario GLPI)',
             'department' => 'Departamento (categoría del usuario)',
             'jobtitle' => 'Cargo (título del usuario)',
-            'supervisor' => 'Jefe de área (supervisor del usuario)',
             'area' => 'Área (ubicación del usuario)',
-            'manager' => 'Gerente de ubicación o supervisor',
+            'manager' => 'Gerente del departamento (categoría del usuario)',
         ] as $key => $label) {
             if (trim((string) ($user[$key] ?? '')) === '') $missing[] = $label;
         }
