@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-define('PLUGIN_ACTADEENTREGA_VERSION', '0.2.7');
+define('PLUGIN_ACTADEENTREGA_VERSION', '0.2.8');
 
 require_once __DIR__ . '/src/ActaService.php';
 require_once __DIR__ . '/src/ActaPdf.php';
@@ -42,7 +42,7 @@ function plugin_actadeentrega_check_prerequisites(): bool
 function plugin_actadeentrega_check_config(): bool { return true; }
 
 /**
- * Version 0.2.7 increases vertical spacing between responsible names in the signature block.
+ * Version 0.2.8 fixes location manager lookup for different GLPI Fields table schemas.
  */
 function plugin_actadeentrega_update(string $oldVersion): bool
 {
