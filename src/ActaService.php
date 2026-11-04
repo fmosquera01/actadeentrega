@@ -64,10 +64,22 @@ final class PluginActadeentregaActaService
             ])->current();
             if (!$fieldMeta || (string)$fieldMeta['name'] !== self::MANAGER_FIELD) return '';
         }
+        // La tabla Fields puede estar vinculada directamente a Locations y no incluir
+        // una columna itemtype. Construimos el filtro según las columnas disponibles.
+        if (!$DB->fieldExists(self::MANAGER_TABLE, 'items_id')) return '';
+
+        $where = ['items_id' => $locationId];
+        if ($DB->fieldExists(self::MANAGER_TABLE, 'itemtype')) {
+            $where['itemtype'] = 'Location';
+        }
+        if ($DB->fieldExists(self::MANAGER_TABLE, 'plugin_fields_containers_id')) {
+            $where['plugin_fields_containers_id'] = self::MANAGER_CONTAINER_ID;
+        }
+
         $row = $DB->request([
             'SELECT' => [self::MANAGER_FIELD],
             'FROM' => self::MANAGER_TABLE,
-            'WHERE' => ['items_id' => $locationId, 'itemtype' => 'Location', 'plugin_fields_containers_id' => self::MANAGER_CONTAINER_ID],
+            'WHERE' => $where,
             'LIMIT' => 1,
         ])->current();
         $managerValue = $row[self::MANAGER_FIELD] ?? 0;
