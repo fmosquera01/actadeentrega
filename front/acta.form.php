@@ -53,7 +53,7 @@ echo "</form>";
 
 if ($user) {
     echo "<h3>Datos recuperados de GLPI</h3><div class='table-responsive'><table class='table table-sm table-bordered' style='max-width:900px'>";
-    foreach (['recipient'=>'Responsable','department'=>'Departamento','jobtitle'=>'Cargo','supervisor'=>'Jefe / Supervisor','area'=>'Área / Ubicación','manager'=>'Gerente del departamento'] as $key=>$label) {
+    foreach (['recipient'=>'Responsable','department'=>'Departamento','jobtitle'=>'Cargo','area'=>'Área / Ubicación','manager'=>'Gerente del departamento'] as $key=>$label) {
         $value = trim((string)($user[$key] ?? ''));
         echo '<tr><th style="width:280px">' . $label . '</th><td>' . ($value !== '' ? htmlspecialchars($value, ENT_QUOTES, 'UTF-8') : '<span class="text-danger fw-bold">FALTA COMPLETAR EN GLPI</span>') . '</td></tr>';
     }
