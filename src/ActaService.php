@@ -60,22 +60,10 @@ final class PluginActadeentregaActaService
             return '';
         }
 
-        // Verifica que el campo configurado corresponda al bloque y campo
-        // indicados en GLPI: Bloque -Gerente2 (12), campo (17).
-        if ($DB->tableExists('glpi_plugin_fields_fields')) {
-            $fieldMeta = $DB->request([
-                'SELECT' => ['id', 'plugin_fields_containers_id', 'name'],
-                'FROM' => 'glpi_plugin_fields_fields',
-                'WHERE' => [
-                    'id' => self::MANAGER_FIELD_ID,
-                    'plugin_fields_containers_id' => self::MANAGER_CONTAINER_ID,
-                ],
-                'LIMIT' => 1,
-            ])->current();
-            if (!$fieldMeta || (string)$fieldMeta['name'] !== self::MANAGER_FIELD) {
-                return '';
-            }
-        }
+        // La tabla generada por Fields identifica la categoría mediante items_id.
+        // No se valida contra la tabla global de metadatos: su estructura/nombres
+        // pueden variar entre versiones del plugin Fields y no deben impedir la lectura del valor.
+
 
         $row = $DB->request([
             'SELECT' => ['manager.firstname', 'manager.realname', 'manager.name'],
