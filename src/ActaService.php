@@ -27,7 +27,7 @@ final class PluginActadeentregaActaService
             'SELECT' => [
                 'u.id', 'u.firstname', 'u.realname', 'u.name', 'u.usercategories_id',
                 'u.usertitles_id', 'u.users_id_supervisor', 'u.locations_id',
-                'cat.name AS department', 'title.name AS jobtitle', 'loc.name AS area',
+                'cat.name AS department', 'title.name AS jobtitle', 'loc.id AS area_location_id',
                 'sup.firstname AS sup_firstname', 'sup.realname AS sup_realname', 'sup.name AS sup_login',
             ],
             'FROM' => 'glpi_users AS u',
@@ -43,12 +43,44 @@ final class PluginActadeentregaActaService
         if (!$row) return [];
         $row['recipient'] = trim(($row['firstname'] ?? '') . ' ' . ($row['realname'] ?? ''));
         if ($row['recipient'] === '') $row['recipient'] = (string) $row['name'];
+        $row['area'] = self::getLocationPath((int) ($row['area_location_id'] ?? 0));
         $row['supervisor'] = trim(($row['sup_firstname'] ?? '') . ' ' . ($row['sup_realname'] ?? ''));
         if ($row['supervisor'] === '') $row['supervisor'] = (string) ($row['sup_login'] ?? '');
         // El gerente se obtiene de la categoría del usuario (departamento).
         // El supervisor es un dato independiente y puede estar vacío.
         $row['manager'] = self::getDepartmentManager((int) $row['usercategories_id']);
         return $row;
+    }
+
+    /**
+     * Devuelve la ubicación completa desde el nivel superior hasta la ubicación asignada.
+     * Ejemplo: S1 > PRODUCCIÓN. Soporta jerarquías de varios niveles.
+     */
+    private static function getLocationPath(int $locationId): string
+    {
+        global $DB;
+        if ($locationId < 1) return '';
+
+        $segments = [];
+        $visited = [];
+        $currentId = $locationId;
+
+        while ($currentId > 0 && !isset($visited[$currentId])) {
+            $visited[$currentId] = true;
+            $location = $DB->request([
+                'SELECT' => ['id', 'name', 'locations_id'],
+                'FROM' => 'glpi_locations',
+                'WHERE' => ['id' => $currentId],
+                'LIMIT' => 1,
+            ])->current();
+
+            if (!$location) break;
+            $name = trim((string) ($location['name'] ?? ''));
+            if ($name !== '') array_unshift($segments, $name);
+            $currentId = (int) ($location['locations_id'] ?? 0);
+        }
+
+        return implode(' > ', $segments);
     }
 
     private static function getDepartmentManager(int $categoryId): string
