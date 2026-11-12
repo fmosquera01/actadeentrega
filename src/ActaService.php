@@ -114,32 +114,144 @@ final class PluginActadeentregaActaService
         return $name !== '' ? $name : trim((string)($row['name'] ?? ''));
     }
 
+    /**
+     * Descubre activos nativos y clases dinámicas creadas mediante Asset Definition.
+     * Las definiciones personalizadas pueden compartir tabla; por eso se filtra
+     * también por assets_assetdefinitions_id.
+     */
     public static function getAssets(int $userId): array
     {
         global $DB;
+        if ($userId < 1) return [];
+
         $assets = [];
-        foreach (self::ASSET_TYPES as $itemtype => $config) {
-            $table = $config['table'];
-            if (!$DB->tableExists($table) || !$DB->fieldExists($table, 'users_id')) continue;
-            $select = ['id', 'name', 'serial', 'otherserial', 'comment', 'users_id', 'manufacturers_id', 'locations_id'];
-            $modelField = $config['model'];
-            if ($DB->fieldExists($table, $modelField)) $select[] = $modelField;
-            $assetTypeField = $config['asset_type'] ?? '';
-            if ($assetTypeField !== '' && $DB->fieldExists($table, $assetTypeField)) $select[] = $assetTypeField;
-            foreach ($DB->request([
-                'SELECT' => $select, 'FROM' => $table,
-                'WHERE' => ['users_id' => $userId, 'is_deleted' => 0, 'is_template' => 0],
-                'ORDER' => ['name ASC'],
-            ]) as $row) {
-                $row['_itemtype'] = $itemtype;
-                $row['_label'] = $config['label'];
-                $row['_table'] = $table;
-                $row['_model_field'] = $config['model'];
-                $row['_asset_type_field'] = $assetTypeField;
-                $row['_asset_type_table'] = $config['asset_type_table'] ?? '';
-                $assets[] = $row;
+        $itemtypes = array_keys(self::ASSET_TYPES);
+
+        $managerClass = 'Glpi\\Asset\\AssetDefinitionManager';
+        $assetBaseClass = 'Glpi\\Asset\\Asset';
+        if (class_exists($managerClass)) {
+            try {
+                $assetManager = $managerClass::getInstance();
+                $assetManager->bootDefinitions();
+
+                foreach ($assetManager->getDefinitions(true) as $definition) {
+                    $itemtype = $definition->getAssetClassName();
+                    if (
+                        is_string($itemtype)
+                        && class_exists($itemtype)
+                        && is_a($itemtype, $assetBaseClass, true)
+                        && is_a($itemtype, CommonDBTM::class, true)
+                    ) {
+                        $itemtypes[] = $itemtype;
+                    }
+                }
+            } catch (Throwable $e) {
+                // Una definición inactiva o incompleta no debe impedir listar
+                // los activos nativos ni las demás definiciones disponibles.
             }
         }
+
+        foreach (array_values(array_unique($itemtypes)) as $itemtype) {
+            try {
+                if (!class_exists($itemtype) || !is_a($itemtype, CommonDBTM::class, true)) {
+                    continue;
+                }
+
+                $table = $itemtype::getTable();
+                if (!$table || !$DB->tableExists($table) || !$DB->fieldExists($table, 'users_id')) {
+                    continue;
+                }
+
+                $config = self::ASSET_TYPES[$itemtype] ?? [];
+                $select = ['id', 'users_id'];
+                $optionalFields = [
+                    'name', 'serial', 'otherserial', 'comment',
+                    'manufacturers_id', 'locations_id', 'entities_id',
+                    'is_deleted', 'is_template',
+                ];
+                foreach ($optionalFields as $field) {
+                    if ($DB->fieldExists($table, $field)) $select[] = $field;
+                }
+
+                $modelField = (string) ($config['model'] ?? '');
+                $modelTable = '';
+                if ($modelField === '') {
+                    // En Asset Definitions, los dropdowns de modelo suelen
+                    // conservar la convención <prefijo>models_id.
+                    foreach ($DB->listFields($table) as $fieldName => $fieldInfo) {
+                        if (!is_string($fieldName) || !preg_match('/^[a-z0-9_]+models_id$/i', $fieldName)) {
+                            continue;
+                        }
+                        $candidateTable = 'glpi_' . substr($fieldName, 0, -3);
+                        if ($DB->tableExists($candidateTable)) {
+                            $modelField = $fieldName;
+                            $modelTable = $candidateTable;
+                            break;
+                        }
+                    }
+                } elseif ($DB->fieldExists($table, $modelField)) {
+                    $prefix = substr($modelField, 0, -strlen('models_id'));
+                    $candidateTable = 'glpi_' . $prefix . 'models';
+                    if ($DB->tableExists($candidateTable)) $modelTable = $candidateTable;
+                }
+                if ($modelField !== '' && $DB->fieldExists($table, $modelField)) {
+                    $select[] = $modelField;
+                }
+
+                $assetTypeField = (string) ($config['asset_type'] ?? '');
+                $assetTypeTable = (string) ($config['asset_type_table'] ?? '');
+                if ($assetTypeField !== '' && $DB->fieldExists($table, $assetTypeField)) {
+                    $select[] = $assetTypeField;
+                } else {
+                    $assetTypeField = '';
+                    $assetTypeTable = '';
+                }
+
+                $where = ['users_id' => $userId];
+                if ($DB->fieldExists($table, 'is_deleted')) $where['is_deleted'] = 0;
+                if ($DB->fieldExists($table, 'is_template')) $where['is_template'] = 0;
+
+                $isCustom = is_a($itemtype, $assetBaseClass, true);
+                if ($isCustom && $DB->fieldExists($table, 'assets_assetdefinitions_id')) {
+                    $definition = $itemtype::getDefinition();
+                    $definitionId = (int) ($definition->fields['id'] ?? 0);
+                    if ($definitionId < 1) continue;
+                    $where['assets_assetdefinitions_id'] = $definitionId;
+                }
+
+                $params = [
+                    'SELECT' => array_values(array_unique($select)),
+                    'FROM' => $table,
+                    'WHERE' => $where,
+                    'ORDER' => ['name ASC'],
+                ];
+                if ($DB->fieldExists($table, 'entities_id')) {
+                    $entities = Session::getActiveEntities();
+                    if ($entities === []) continue;
+                    $params['WHERE']['entities_id'] = $entities;
+                }
+
+                foreach ($DB->request($params) as $row) {
+                    $row['_itemtype'] = $itemtype;
+                    $row['_label'] = $config['label'] ?? $itemtype::getTypeName(1);
+                    $row['_table'] = $table;
+                    $row['_model_field'] = $modelField;
+                    $row['_model_table'] = $modelTable;
+                    $row['_asset_type_field'] = $assetTypeField;
+                    $row['_asset_type_table'] = $assetTypeTable;
+                    $assets[] = $row;
+                }
+            } catch (Throwable $e) {
+                // Saltar solo el tipo que no pueda consultarse.
+                continue;
+            }
+        }
+
+        usort($assets, static fn(array $a, array $b): int => strcasecmp(
+            (string) ($a['_label'] ?? '') . ' ' . (string) ($a['name'] ?? ''),
+            (string) ($b['_label'] ?? '') . ' ' . (string) ($b['name'] ?? '')
+        ));
+
         return $assets;
     }
 
@@ -170,13 +282,16 @@ final class PluginActadeentregaActaService
         $modelField = (string) ($asset['_model_field'] ?? '');
         $modelId = (int) ($asset[$modelField] ?? 0);
         if ($modelId > 0) {
-            $modelTable = match ($asset['_itemtype'] ?? '') {
-                'Computer' => 'glpi_computermodels', 'Monitor' => 'glpi_monitormodels',
-                'Phone' => 'glpi_phonemodels', 'Printer' => 'glpi_printermodels',
-                'Peripheral' => 'glpi_peripheralmodels', 'NetworkEquipment' => 'glpi_networkequipmentmodels',
-                'PDU' => 'glpi_pdumodels', 'Enclosure' => 'glpi_enclosuremodels', 'Rack' => 'glpi_rackmodels',
-                default => '',
-            };
+            $modelTable = (string) ($asset['_model_table'] ?? '');
+            if ($modelTable === '') {
+                $modelTable = match ($asset['_itemtype'] ?? '') {
+                    'Computer' => 'glpi_computermodels', 'Monitor' => 'glpi_monitormodels',
+                    'Phone' => 'glpi_phonemodels', 'Printer' => 'glpi_printermodels',
+                    'Peripheral' => 'glpi_peripheralmodels', 'NetworkEquipment' => 'glpi_networkequipmentmodels',
+                    'PDU' => 'glpi_pdumodels', 'Enclosure' => 'glpi_enclosuremodels', 'Rack' => 'glpi_rackmodels',
+                    default => '',
+                };
+            }
             if ($modelTable !== '') {
                 $name = trim((string) Dropdown::getDropdownName($modelTable, $modelId));
                 if ($name !== '') $parts[] = $name;
