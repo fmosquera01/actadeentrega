@@ -80,7 +80,7 @@ if ($managerId > 0 && $DB->tableExists('glpi_plugin_informeglopi_user_signatures
     $managerHasReusableSignature = (int)$DB->request([
         'COUNT' => 'c',
         'FROM' => 'glpi_plugin_informeglopi_user_signatures',
-        'WHERE' => ['users_id' => $managerId],
+        'WHERE' => ['users_id' => $managerId, 'pin_hash' => ['!=', '']],
     ])->current()['c'] > 0;
 }
 echo "<div class='container-fluid'><h2>Acta " . htmlspecialchars((string)$acta['act_number'], ENT_QUOTES, 'UTF-8') . "</h2>";
