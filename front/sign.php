@@ -165,6 +165,24 @@ $recipientSigned = !empty($acta['recipient_signature_path']);
 $managerSigned = !empty($acta['manager_signature_path']);
 $managerHasReusableSignature = false;
 $managerId = (int)($user['manager_users_id'] ?? 0);
+$recipientId = (int)($acta['recipient_users_id'] ?? 0);
+$recipientHasReusableSignature = false;
+
+if ($recipientId > 0 && $DB->tableExists('glpi_plugin_informeglopi_user_signatures')) {
+    $recipientSignatureRow = $DB->request([
+        'SELECT' => ['signature_path', 'signature_sha256', 'pin_hash'],
+        'FROM' => 'glpi_plugin_informeglopi_user_signatures',
+        'WHERE' => ['users_id' => $recipientId],
+        'LIMIT' => 1,
+    ])->current();
+
+    if ($recipientSignatureRow
+        && trim((string)($recipientSignatureRow['signature_path'] ?? '')) !== ''
+        && trim((string)($recipientSignatureRow['signature_sha256'] ?? '')) !== ''
+        && trim((string)($recipientSignatureRow['pin_hash'] ?? '')) !== '') {
+        $recipientHasReusableSignature = true;
+    }
+}
 
 if ($managerId > 0 && $DB->tableExists('glpi_plugin_informeglopi_user_signatures')) {
     $signatureRow = $DB->request([
@@ -183,7 +201,7 @@ if ($managerId > 0 && $DB->tableExists('glpi_plugin_informeglopi_user_signatures
 }
 
 $date = new DateTimeImmutable((string)($snapshot['date'] ?? $acta['act_date'] ?? 'now'));
-$logoUrl = '/plugins/actadeentrega/logo_songa.jpeg';
+$logoUrl = '../logo_songa.jpeg';
 $statusHtml = $esc($status);
 $actNumberHtml = $esc($acta['act_number']);
 $isFinal = $status === 'Firmada completamente';
@@ -284,7 +302,11 @@ if ($recipientSigned) {
 }
 echo '<div class="ae-signline">' . $esc($recipientName) . '</div>';
 if (!$recipientSigned && $status === 'Pendiente de firma del colaborador') {
-    echo '<div class="ae-actions"><button class="ae-iconbtn" type="button" title="Firmar manuscritamente" aria-label="Firmar manuscritamente" onclick="openSignatureModal(\'recipient\')"><i class="fas fa-pen-nib"></i></button></div><div class="ae-help">Firma manuscrita en este dispositivo.</div>';
+    echo '<div class="ae-actions"><button class="ae-iconbtn" type="button" title="Firmar manuscritamente" aria-label="Firmar manuscritamente" onclick="openSignatureModal(\\'recipient-draw\\')"><i class="fas fa-pen-nib"></i></button>';
+    if ($recipientHasReusableSignature) {
+        echo '<button class="ae-iconbtn" type="button" title="Firmar con PIN personal" aria-label="Firmar con PIN personal" onclick="openSignatureModal(\\'recipient-pin\\')"><i class="fas fa-key"></i></button>';
+    }
+    echo '</div><div class="ae-help">El colaborador debe realizar personalmente la firma o ingresar su PIN.</div>';
 }
 echo '</div>';
 
@@ -328,13 +350,14 @@ echo <<<JS
  if(ctx){ctx.lineWidth=3;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#111';}
  window.openSignatureModal=function(nextMode){
    mode=nextMode;
-   const isRecipient=mode==='recipient';
-   const isPin=mode==='manager-pin';
+   const isRecipient=mode==='recipient-draw'||mode==='recipient-pin';
+   const isPin=mode==='manager-pin'||mode==='recipient-pin';
    document.getElementById('aeModalTitle').textContent=isRecipient?'Firma del colaborador':(isPin?'Autorización de firma del gerente':'Firma manuscrita del gerente');
    document.getElementById('aeDeclaration').textContent=isRecipient
      ?'Declaro haber recibido los equipos detallados en esta acta y asumo su custodia mientras estén asignados a mi responsabilidad.'
      :'He revisado esta acta y acepto la responsabilidad de custodia de los activos correspondientes, conforme a las condiciones establecidas.';
    document.getElementById('aeRole').value=isRecipient?'recipient':'manager';
+   document.getElementById('aeMethod').name=isRecipient?'recipient_method':'manager_method';
    document.getElementById('aeMethod').value=isPin?'pin':'draw';
    document.getElementById('aeDrawArea').style.display=isPin?'none':'block';
    document.getElementById('aePinArea').style.display=isPin?'block':'none';
@@ -356,8 +379,8 @@ echo <<<JS
  }
  const form=document.getElementById('aeSignatureForm');
  if(form)form.addEventListener('submit',e=>{
-   if(mode==='manager-pin'){
-     document.getElementById('aePin').name='manager_pin';
+   if(mode==='manager-pin'||mode==='recipient-pin'){
+     document.getElementById('aePin').name=mode==='recipient-pin'?'recipient_pin':'manager_pin';
      if(!/^[0-9]{6}$/.test(document.getElementById('aePin').value)){e.preventDefault();alert('Ingrese el PIN personal de 6 dígitos.');return;}
    }else{
      document.getElementById('aePin').removeAttribute('name');
