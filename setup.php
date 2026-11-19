@@ -1,10 +1,11 @@
 <?php
 declare(strict_types=1);
 
-define('PLUGIN_ACTADEENTREGA_VERSION', '0.2.14');
+define('PLUGIN_ACTADEENTREGA_VERSION', '0.2.15');
 
 require_once __DIR__ . '/src/ActaService.php';
 require_once __DIR__ . '/src/ActaPdf.php';
+require_once __DIR__ . '/src/SigningService.php';
 require_once __DIR__ . '/src/Menu.php';
 require_once __DIR__ . '/src/Profile.php';
 require_once __DIR__ . '/src/Acta.php';
