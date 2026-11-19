@@ -53,8 +53,6 @@ try {
             $DB->update('glpi_plugin_actadeentrega_actas', [
                 'manager_signature_path' => $managerSignature,
                 'manager_signature_method' => $auditMethod,
-                'status' => 'Firmada completamente',
-                'manager_signed_at' => date('Y-m-d H:i:s'),
             ], ['id' => $id]);
             PluginActadeentregaSigningService::audit($id, $managerId, 'gerente', $auditMethod, 'Firma recogida por técnico GLPI ' . (int)Session::getLoginUserID());
             $fresh = PluginActadeentregaSigningService::acta($id);
@@ -95,16 +93,16 @@ if ($status === 'Pendiente de firma del colaborador') {
     echo "<input type='hidden' name='_glpi_csrf_token' value='" . Session::getNewCSRFToken(true) . "'><input type='hidden' name='id' value='" . $id . "'><input type='hidden' name='role' value='recipient'><input type='hidden' name='signature_data' id='recipientSignature'>";
     echo "<p>Declaro haber recibido los equipos detallados en esta acta y asumo su custodia mientras estén asignados a mi responsabilidad.</p>";
     echo "<label class='form-label fw-semibold'>Firma del colaborador: " . htmlspecialchars($recipientName, ENT_QUOTES, 'UTF-8') . "</label><canvas id='recipientCanvas' width='900' height='260' style='width:100%;height:190px;border:1px solid #777;border-radius:6px;touch-action:none;background:#fff'></canvas>";
-    echo "<button type='button' class='btn btn-outline-secondary mt-2' onclick='clearSignature("recipientCanvas")'>Limpiar firma</button><button class='btn btn-primary mt-3' type='submit'>Guardar firma del colaborador</button></form>";
+    echo "<button type='button' class='btn btn-outline-secondary mt-2' onclick='clearSignature(&quot;recipientCanvas&quot;)'>Limpiar firma</button><button class='btn btn-primary mt-3' type='submit'>Guardar firma del colaborador</button></form>";
 } elseif ($status === 'Pendiente de firma del gerente') {
     echo "<div class='alert alert-warning'>El colaborador ya firmó. Ahora el gerente debe aceptar la responsabilidad. El técnico debe poner el dispositivo a disposición del gerente.</div>";
     echo "<div class='card card-body' style='max-width:760px'><p>He revisado esta acta y acepto la responsabilidad de custodia de los activos correspondientes, conforme a las condiciones establecidas.</p>";
     echo "<div class='mb-3'><label class='form-label fw-semibold'>Firma del gerente: " . htmlspecialchars($managerName, ENT_QUOTES, 'UTF-8') . "</label>";
-    echo "<div class='btn-group mb-2' role='group'><button type='button' class='btn btn-outline-primary' onclick='showManagerMode("draw")'>Dibujar firma</button>";
-    if ($managerHasReusableSignature) echo "<button type='button' class='btn btn-outline-primary' onclick='showManagerMode("pin")'>Usar firma registrada con PIN</button>";
+    echo "<div class='btn-group mb-2' role='group'><button type='button' class='btn btn-outline-primary' onclick='showManagerMode(&quot;draw&quot;)'>Dibujar firma</button>";
+    if ($managerHasReusableSignature) echo "<button type='button' class='btn btn-outline-primary' onclick='showManagerMode(&quot;pin&quot;)'>Usar firma registrada con PIN</button>";
     echo "</div></div>";
     echo "<form method='post' id='managerDrawForm'><input type='hidden' name='_glpi_csrf_token' value='" . Session::getNewCSRFToken(true) . "'><input type='hidden' name='id' value='" . $id . "'><input type='hidden' name='role' value='manager'><input type='hidden' name='manager_method' value='draw'><input type='hidden' name='signature_data' id='managerSignature'>";
-    echo "<div id='managerDraw'><canvas id='managerCanvas' width='900' height='260' style='width:100%;height:190px;border:1px solid #777;border-radius:6px;touch-action:none;background:#fff'></canvas><button type='button' class='btn btn-outline-secondary mt-2' onclick='clearSignature("managerCanvas")'>Limpiar firma</button><button class='btn btn-primary mt-3' type='submit'>Guardar firma del gerente</button></div></form>";
+    echo "<div id='managerDraw'><canvas id='managerCanvas' width='900' height='260' style='width:100%;height:190px;border:1px solid #777;border-radius:6px;touch-action:none;background:#fff'></canvas><button type='button' class='btn btn-outline-secondary mt-2' onclick='clearSignature(&quot;managerCanvas&quot;)'>Limpiar firma</button><button class='btn btn-primary mt-3' type='submit'>Guardar firma del gerente</button></div></form>";
     if ($managerHasReusableSignature) {
         echo "<form method='post' id='managerPinForm' style='display:none'><input type='hidden' name='_glpi_csrf_token' value='" . Session::getNewCSRFToken(true) . "'><input type='hidden' name='id' value='" . $id . "'><input type='hidden' name='role' value='manager'><input type='hidden' name='manager_method' value='pin'><label class='form-label'>El gerente debe ingresar personalmente su PIN de 6 dígitos</label><input class='form-control' style='max-width:220px' type='password' inputmode='numeric' pattern='[0-9]{6}' maxlength='6' name='manager_pin' autocomplete='off' required><button class='btn btn-primary mt-3' type='submit'>Autorizar y firmar</button></form>";
     }
