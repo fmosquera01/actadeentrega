@@ -16,7 +16,8 @@ try {
     $status = (string)$acta['status'];
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        Session::checkCSRF($_POST);
+        // GLPI 11 valida el token CSRF mediante su CheckCsrfListener antes de ejecutar esta página.
+        // No volver a consumirlo aquí: la doble validación provoca CSRF check failed.
         if ($status === 'Firmada completamente' || $status === 'Anulada') {
             throw new RuntimeException('El acta ya está finalizada o anulada y no admite cambios.');
         }
@@ -26,10 +27,27 @@ try {
                 throw new RuntimeException('La firma del colaborador ya fue registrada o el acta no está en esa etapa.');
             }
             $sig = PluginActadeentregaSigningService::storeDrawing((string)($_POST['signature_data'] ?? ''), (string)$acta['act_number'], 'colaborador');
+            // Actualizar el PDF de vista previa para que el gerente vea también la firma del colaborador.
+            $previewBase = rtrim(GLPI_VAR_DIR, DIRECTORY_SEPARATOR) . '/_plugins/actadeentrega/acts';
+            $previewFile = 'acta_preview_' . $id . '_' . bin2hex(random_bytes(5)) . '.pdf';
+            $previewPath = $previewBase . '/' . $previewFile;
+            try {
+                PluginActadeentregaActaPdf::generate($snapshot, (string)$acta['issuer_signature_path'], $previewPath, $sig);
+                $previewHash = hash_file('sha256', $previewPath);
+                if (!$previewHash) {
+                    throw new RuntimeException('No se pudo verificar la vista previa del acta.');
+                }
+            } catch (Throwable $previewError) {
+                if (is_file($previewPath)) @unlink($previewPath);
+                if (is_file($sig)) @unlink($sig);
+                throw $previewError;
+            }
             $DB->update('glpi_plugin_actadeentrega_actas', [
                 'recipient_signature_path' => $sig,
                 'recipient_signed_at' => date('Y-m-d H:i:s'),
                 'status' => 'Pendiente de firma del gerente',
+                'pdf_path' => '_plugins/actadeentrega/acts/' . $previewFile,
+                'pdf_sha256' => $previewHash,
             ], ['id' => $id]);
             PluginActadeentregaSigningService::audit($id, (int)$acta['recipient_users_id'], 'colaborador', 'firma_dibujada', 'Firma manuscrita recogida por técnico GLPI ' . (int)Session::getLoginUserID());
             Session::addMessageAfterRedirect('Firma del colaborador registrada. Ahora corresponde la firma del gerente.', true, INFO);
@@ -86,7 +104,10 @@ if ($managerId > 0 && $DB->tableExists('glpi_plugin_informeglopi_user_signatures
 echo "<div class='container-fluid'><h2>Acta " . htmlspecialchars((string)$acta['act_number'], ENT_QUOTES, 'UTF-8') . "</h2>";
 echo "<p><strong>Estado:</strong> " . htmlspecialchars($status, ENT_QUOTES, 'UTF-8') . "</p>";
 echo "<p><strong>Colaborador:</strong> " . htmlspecialchars($recipientName, ENT_QUOTES, 'UTF-8') . "<br><strong>Gerente:</strong> " . htmlspecialchars($managerName, ENT_QUOTES, 'UTF-8') . "</p>";
-echo "<p><a class='btn btn-outline-secondary' target='_blank' href='/plugins/actadeentrega/front/pdf.php?id=" . $id . "'>Revisar documento</a></p>";
+echo "<div class='row g-3 align-items-start'>";
+echo "<div class='col-12 col-xl-7'><div class='card'><div class='card-header d-flex justify-content-between align-items-center'><strong>Documento del acta</strong><a class='btn btn-sm btn-outline-secondary' target='_blank' href='/plugins/actadeentrega/front/pdf.php?id=" . $id . "'>Abrir PDF</a></div>";
+echo "<iframe title='Vista previa del acta' src='/plugins/actadeentrega/front/pdf.php?id=" . $id . "' style='display:block;width:100%;height:78vh;min-height:560px;border:0;background:#f2f2f2' loading='eager'></iframe></div></div>";
+echo "<div class='col-12 col-xl-5'>";
 if ($status === 'Pendiente de firma del colaborador') {
     echo "<div class='alert alert-info'>El colaborador debe revisar y firmar primero. La firma se recoge en el dispositivo del técnico.</div>";
     echo "<form method='post' id='recipientForm' class='card card-body' style='max-width:760px'>";
@@ -108,8 +129,9 @@ if ($status === 'Pendiente de firma del colaborador') {
     }
     echo "</div>";
 } else {
-    echo "<div class='alert alert-success'>El acta está finalizada. <a href='/plugins/actadeentrega/front/pdf.php?id=" . $id . "' target='_blank'>Abrir PDF firmado</a></div>";
+    echo "<div class='alert alert-success'>El acta está finalizada. El documento firmado se muestra en el visor de la izquierda.</div>";
 }
+echo "</div></div>";
 echo "<script>
 function setupCanvas(id, hiddenId, formId) {
  const canvas=document.getElementById(id); if(!canvas)return;
