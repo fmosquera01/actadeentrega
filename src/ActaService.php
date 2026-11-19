@@ -49,6 +49,7 @@ final class PluginActadeentregaActaService
         // El gerente se obtiene de la categoría del usuario (departamento).
         // El supervisor es un dato independiente y puede estar vacío.
         $row['manager'] = self::getDepartmentManager((int) $row['usercategories_id']);
+        $row['manager_users_id'] = self::getDepartmentManagerId((int) $row['usercategories_id']);
         return $row;
     }
 
@@ -112,6 +113,23 @@ final class PluginActadeentregaActaService
         if (!$row) return '';
         $name = trim((string)($row['firstname'] ?? '') . ' ' . (string)($row['realname'] ?? ''));
         return $name !== '' ? $name : trim((string)($row['name'] ?? ''));
+    }
+
+    private static function getDepartmentManagerId(int $categoryId): int
+    {
+        global $DB;
+        if ($categoryId < 1 || !$DB->tableExists(self::MANAGER_TABLE)
+            || !$DB->fieldExists(self::MANAGER_TABLE, self::MANAGER_FIELD)
+            || !$DB->fieldExists(self::MANAGER_TABLE, 'items_id')) {
+            return 0;
+        }
+        $row = $DB->request([
+            'SELECT' => [self::MANAGER_FIELD],
+            'FROM' => self::MANAGER_TABLE,
+            'WHERE' => ['items_id' => $categoryId],
+            'LIMIT' => 1,
+        ])->current();
+        return (int)($row[self::MANAGER_FIELD] ?? 0);
     }
 
     /**
