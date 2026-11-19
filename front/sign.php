@@ -16,7 +16,7 @@ try {
     $status = (string)$acta['status'];
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        Session::checkCSRFToken();
+        Session::checkCSRF($_POST);
         if ($status === 'Firmada completamente' || $status === 'Anulada') {
             throw new RuntimeException('El acta ya está finalizada o anulada y no admite cambios.');
         }
