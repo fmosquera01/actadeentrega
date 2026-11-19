@@ -5,6 +5,7 @@ include('../../../inc/includes.php');
 Session::checkRight('plugin_actadeentrega', CREATE);
 require_once __DIR__ . '/../src/ActaService.php';
 require_once __DIR__ . '/../src/ActaPdf.php';
+require_once __DIR__ . '/../src/SigningService.php';
 
 global $DB;
 try {
@@ -74,6 +75,7 @@ try {
             'status'=>'Pendiente de firma del colaborador', 'issuer_signature_path'=>$signature['path'],
         ]);
         $actaId = (int)$DB->insertId();
+        PluginActadeentregaSigningService::audit($actaId, $issuerId, 'tecnico_entrega', 'pin_glpi', 'Firma de entrega autorizada por el técnico creador.');
         foreach ($participants as $order => $participant) {
             $DB->insert('glpi_plugin_actadeentrega_acta_users', [
                 'plugin_actadeentrega_actas_id' => $actaId,
