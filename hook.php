@@ -64,6 +64,23 @@ function plugin_actadeentrega_install(): bool
         }
     }
 
+    // Token temporal para la firma remota del gerente. Solo se almacena SHA-256;
+    // el token original se entrega una única vez al mecanismo de notificación.
+    $publicTokenColumns = [
+        'manager_token_hash' => "char(64) NOT NULL DEFAULT ''",
+        'manager_token_created_at' => 'datetime NULL',
+        'manager_token_expires_at' => 'datetime NULL',
+        'manager_token_used_at' => 'datetime NULL',
+        'manager_token_revoked_at' => 'datetime NULL',
+        'manager_email_sent_at' => 'datetime NULL',
+        'manager_email' => "varchar(255) NOT NULL DEFAULT ''",
+    ];
+    foreach ($publicTokenColumns as $field => $definition) {
+        if (!$DB->fieldExists($table, $field)) {
+            $migration->addPostQuery("ALTER TABLE `{$table}` ADD `{$field}` {$definition}");
+        }
+    }
+
     $signatures = 'glpi_plugin_actadeentrega_signatures';
     if (!$DB->tableExists($signatures)) {
         $migration->addPostQuery("CREATE TABLE IF NOT EXISTS `{$signatures}` (
