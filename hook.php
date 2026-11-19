@@ -49,6 +49,37 @@ function plugin_actadeentrega_install(): bool
         ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}");
     }
 
+    $actaColumns = [
+        'status' => "varchar(40) NOT NULL DEFAULT 'Firmada completamente'",
+        'issuer_signature_path' => "varchar(500) NOT NULL DEFAULT ''",
+        'recipient_signature_path' => "varchar(500) NOT NULL DEFAULT ''",
+        'manager_signature_path' => "varchar(500) NOT NULL DEFAULT ''",
+        'recipient_signed_at' => 'datetime NULL',
+        'manager_signed_at' => 'datetime NULL',
+        'manager_signature_method' => "varchar(30) NOT NULL DEFAULT ''",
+    ];
+    foreach ($actaColumns as $field => $definition) {
+        if (!$DB->fieldExists($table, $field)) {
+            $migration->addPostQuery("ALTER TABLE `{$table}` ADD `{$field}` {$definition}");
+        }
+    }
+
+    $signatures = 'glpi_plugin_actadeentrega_signatures';
+    if (!$DB->tableExists($signatures)) {
+        $migration->addPostQuery("CREATE TABLE IF NOT EXISTS `{$signatures}` (
+            `id` int unsigned NOT NULL AUTO_INCREMENT,
+            `plugin_actadeentrega_actas_id` int unsigned NOT NULL,
+            `users_id` int unsigned NOT NULL DEFAULT 0,
+            `role` varchar(30) NOT NULL,
+            `method` varchar(30) NOT NULL,
+            `detail` varchar(255) NOT NULL DEFAULT '',
+            `signed_at` datetime NOT NULL,
+            PRIMARY KEY (`id`),
+            KEY `acta_id` (`plugin_actadeentrega_actas_id`),
+            KEY `users_id` (`users_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}");
+    }
+
     $migration->executeMigration();
 
     // Register the plugin right for every existing profile, without
