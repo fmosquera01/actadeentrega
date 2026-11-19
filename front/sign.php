@@ -352,7 +352,7 @@ echo <<<JS
    mode=nextMode;
    const isRecipient=mode==='recipient-draw'||mode==='recipient-pin';
    const isPin=mode==='manager-pin'||mode==='recipient-pin';
-   document.getElementById('aeModalTitle').textContent=isRecipient?'Firma del colaborador':(isRecipient?(isPin?'Autorización PIN del colaborador':'Firma manuscrita del colaborador'):(isPin?'Autorización de firma del gerente':'Firma manuscrita del gerente'));
+   document.getElementById('aeModalTitle').textContent=isRecipient?(isPin?'Autorización PIN del colaborador':'Firma manuscrita del colaborador'):(isPin?'Autorización de firma del gerente':'Firma manuscrita del gerente');
    document.getElementById('aeDeclaration').textContent=isRecipient
      ?'Declaro haber recibido los equipos detallados en esta acta y asumo su custodia mientras estén asignados a mi responsabilidad.'
      :'He revisado esta acta y acepto la responsabilidad de custodia de los activos correspondientes, conforme a las condiciones establecidas.';
