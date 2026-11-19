@@ -302,9 +302,9 @@ if ($recipientSigned) {
 }
 echo '<div class="ae-signline">' . $esc($recipientName) . '</div>';
 if (!$recipientSigned && $status === 'Pendiente de firma del colaborador') {
-    echo '<div class="ae-actions"><button class="ae-iconbtn" type="button" title="Firmar manuscritamente" aria-label="Firmar manuscritamente" onclick="openSignatureModal(\\'recipient-draw\\')"><i class="fas fa-pen-nib"></i></button>';
+    echo '<div class="ae-actions"><button class="ae-iconbtn" type="button" title="Firmar manuscritamente" aria-label="Firmar manuscritamente" onclick="openSignatureModal(\'recipient-draw\')"><i class="fas fa-pen-nib"></i></button>';
     if ($recipientHasReusableSignature) {
-        echo '<button class="ae-iconbtn" type="button" title="Firmar con PIN personal" aria-label="Firmar con PIN personal" onclick="openSignatureModal(\\'recipient-pin\\')"><i class="fas fa-key"></i></button>';
+        echo '<button class="ae-iconbtn" type="button" title="Firmar con PIN personal" aria-label="Firmar con PIN personal" onclick="openSignatureModal(\'recipient-pin\')"><i class="fas fa-key"></i></button>';
     }
     echo '</div><div class="ae-help">El colaborador debe realizar personalmente la firma o ingresar su PIN.</div>';
 }
