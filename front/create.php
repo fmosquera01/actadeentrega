@@ -44,6 +44,7 @@ try {
             'users_id' => $userId, 'recipient' => $user['recipient'],
             'department' => $user['department'], 'jobtitle' => $user['jobtitle'],
             'supervisor' => $user['supervisor'], 'area' => $user['area'], 'manager' => $user['manager'],
+            'manager_users_id' => (int)($user['manager_users_id'] ?? 0),
         ],
         'issuer' => ['users_id' => $issuerId, 'name' => getUserName($issuerId), 'signature_sha256' => $signature['sha256']],
         'participants' => $participants,
@@ -70,6 +71,7 @@ try {
             'recipient_users_id'=>$userId, 'issuer_users_id'=>$issuerId,
             'act_date'=>$now, 'snapshot'=>json_encode($snapshot, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR),
             'pdf_path'=>'_plugins/actadeentrega/acts/'.$file, 'pdf_sha256'=>$hash,
+            'status'=>'Pendiente de firma del colaborador', 'issuer_signature_path'=>$signature['path'],
         ]);
         $actaId = (int)$DB->insertId();
         foreach ($participants as $order => $participant) {
@@ -86,8 +88,8 @@ try {
         if (isset($path) && is_file($path)) @unlink($path);
         throw $e;
     }
-    Session::addMessageAfterRedirect('Acta ' . $number . ' generada correctamente. Se descargará el PDF.', true, INFO);
-    header('Location: /plugins/actadeentrega/front/pdf.php?id=' . $actaId, true, 303);
+    Session::addMessageAfterRedirect('Acta ' . $number . ' creada. Falta la firma del colaborador y posteriormente la del gerente.', true, INFO);
+    header('Location: /plugins/actadeentrega/front/sign.php?id=' . $actaId, true, 303);
     exit;
 } catch (Throwable $e) {
     Session::addMessageAfterRedirect($e->getMessage(), false, ERROR);
