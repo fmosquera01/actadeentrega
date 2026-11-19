@@ -163,6 +163,8 @@ if ($managerId > 0 && $DB->tableExists('glpi_plugin_informeglopi_user_signatures
 
 $date = new DateTimeImmutable((string)($snapshot['date'] ?? $acta['act_date'] ?? 'now'));
 $logoUrl = '/plugins/actadeentrega/logo_songa.jpeg';
+$statusHtml = $esc($status);
+$actNumberHtml = $esc($acta['act_number']);
 $isFinal = $status === 'Firmada completamente';
 
 Html::header('Acta de Entrega', $_SERVER['PHP_SELF'], 'plugins', 'PluginActadeentregaMenu');
@@ -207,7 +209,7 @@ echo <<<HTML
   <div class="ae-toolbar">
     <div><h2 style="margin:0">Acta de Entrega</h2><div class="text-muted">Revisión y registro de firmas</div></div>
     <div class="d-flex align-items-center gap-2 flex-wrap">
-      <span class="ae-status">{$esc($status)}</span>
+      <span class="ae-status">{$statusHtml}</span>
       <a class="btn btn-outline-secondary btn-sm" href="/plugins/actadeentrega/front/pdf.php?id={$id}" target="_blank" rel="noopener"><i class="fas fa-file-pdf"></i> PDF</a>
       <button class="btn btn-outline-secondary btn-sm" type="button" onclick="window.print()"><i class="fas fa-print"></i> Imprimir</button>
     </div>
@@ -215,7 +217,7 @@ echo <<<HTML
   <article class="ae-paper">
     <header class="ae-dochead">
       <img src="{$logoUrl}" alt="Songa">
-      <div><h1>ACTA DE ENTREGA DE EQUIPOS</h1><div class="ae-number">N.º {$esc($acta['act_number'])}</div></div>
+      <div><h1>ACTA DE ENTREGA DE EQUIPOS</h1><div class="ae-number">N.º {$actNumberHtml}</div></div>
     </header>
     <h2 class="ae-section-title">DATOS</h2>
     <section class="ae-data">
