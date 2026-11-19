@@ -33,13 +33,34 @@ try {
                 throw new RuntimeException('La firma del colaborador ya fue registrada o el acta no está en esa etapa.');
             }
 
-            $sig = PluginActadeentregaSigningService::storeDrawing(
-                (string)($_POST['signature_data'] ?? ''),
-                (string)$acta['act_number'],
-                'colaborador'
-            );
+            $recipientId = (int)($acta['recipient_users_id'] ?? 0);
+            if ($recipientId < 1) {
+                throw new RuntimeException('El colaborador receptor no tiene un usuario GLPI válido.');
+            }
+
+            $method = (string)($_POST['recipient_method'] ?? 'draw');
+            if ($method === 'pin') {
+                $authorized = PluginActadeentregaActaService::authorizeSignature(
+                    $recipientId,
+                    (string)($_POST['recipient_pin'] ?? '')
+                );
+                $sig = $authorized['path'];
+                $auditMethod = 'pin_local';
+            } elseif ($method === 'draw') {
+                $sig = PluginActadeentregaSigningService::storeDrawing(
+                    (string)($_POST['signature_data'] ?? ''),
+                    (string)$acta['act_number'],
+                    'colaborador'
+                );
+                $auditMethod = 'firma_dibujada';
+            } else {
+                throw new RuntimeException('Método de firma del colaborador no válido.');
+            }
 
             $previewBase = rtrim(GLPI_VAR_DIR, DIRECTORY_SEPARATOR) . '/_plugins/actadeentrega/acts';
+            if (!is_dir($previewBase) && !mkdir($previewBase, 0750, true) && !is_dir($previewBase)) {
+                throw new RuntimeException('No se pudo preparar el almacenamiento del PDF preliminar.');
+            }
             $previewFile = 'acta_preview_' . $id . '_' . bin2hex(random_bytes(5)) . '.pdf';
             $previewPath = $previewBase . '/' . $previewFile;
 
@@ -56,7 +77,7 @@ try {
                 }
             } catch (Throwable $previewError) {
                 if (is_file($previewPath)) @unlink($previewPath);
-                if (is_file($sig)) @unlink($sig);
+                // No borrar $sig: con PIN pertenece al repositorio central de Informe Técnico.
                 throw $previewError;
             }
 
@@ -70,10 +91,10 @@ try {
 
             PluginActadeentregaSigningService::audit(
                 $id,
-                (int)$acta['recipient_users_id'],
+                $recipientId,
                 'colaborador',
-                'firma_dibujada',
-                'Firma manuscrita recogida por técnico GLPI ' . (int)Session::getLoginUserID()
+                $auditMethod,
+                'Firma autorizada por el colaborador; registro mediante técnico GLPI ' . (int)Session::getLoginUserID()
             );
             Session::addMessageAfterRedirect('Firma del colaborador registrada. Ahora corresponde la firma del gerente.', true, INFO);
         } elseif ($role === 'manager') {
