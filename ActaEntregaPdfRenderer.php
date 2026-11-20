@@ -210,55 +210,79 @@ class ActaEntregaPdfRenderer
         return $y;
     }
 
-    /* Cada responsable dispone de su propio recuadro y firma. */
+    /* Firma de cada responsable en una fila compacta: datos a la izquierda y rúbrica a la derecha. */
     private function firmaResponsables(array $participants, float $y): float
     {
         $p = $this->pdf;
         if (!$participants) {
             $participants = [['name' => 'Responsable', 'path' => null]];
         }
-        $p->SetDrawColor(0, 0, 0);
-        $p->SetLineWidth(0.6);
-        $p->SetTextColor(0, 0, 0);
-        $p->SetFont('helvetica', 'B', 10.5);
-        $p->SetXY(81, $y);
-        $p->Cell(433, 17, 'FIRMAS DE RESPONSABLES Y CORRESPONSABLES', 1, 0, 'L');
-        $y += 25;
 
-        $columns = count($participants) > 1 ? 2 : 1;
-        $gap = 12.0;
-        $boxW = $columns === 2 ? (433.0 - $gap) / 2 : 433.0;
-        $boxH = 84.0;
+        $x = 81.0;
+        $w = 433.0;
+        $rowH = 46.0;
+        $nameW = 245.0;
+        $signatureW = $w - $nameW;
+        $bottom = 790.0;
 
-        foreach (array_chunk($participants, $columns) as $row) {
-            if ($y + $boxH > 790.0) {
+        $drawHeading = static function (float $top) use ($p, $x, $w): float {
+            $p->SetFont('helvetica', 'B', 10.5);
+            $p->SetTextColor(0, 0, 0);
+            $p->SetDrawColor(0, 0, 0);
+            $p->SetLineWidth(0.6);
+            $p->SetXY($x, $top);
+            $p->Cell($w, 17, 'FIRMA RESPONSABLE', 1, 0, 'L');
+            return $top + 21.0;
+        };
+
+        $y = $drawHeading($y);
+        foreach ($participants as $participant) {
+            if ($y + $rowH > $bottom) {
                 $p->AddPage();
-                $y = 42.0;
-                $p->SetFont('helvetica', 'B', 10.5);
-                $p->SetXY(81, $y);
-                $p->Cell(433, 17, 'FIRMAS DE RESPONSABLES (CONTINUACIÓN)', 0, 0, 'L');
-                $y += 25;
+                $y = $drawHeading(42.0);
             }
-            foreach ($row as $index => $participant) {
-                $x = 81.0 + $index * ($boxW + $gap);
-                $p->Rect($x, $y, $boxW, $boxH);
-                $path = (string)($participant['path'] ?? '');
-                if ($path !== '' && is_file($path)) {
-                    $p->Image($path, $x + 8, $y + 4, $boxW - 16, 36, '', '', '', true, 300, '', false, false, 0, 'CM', false, false);
-                }
-                $p->SetFont('helvetica', 'B', 7.8);
-                $name = (string)($participant['name'] ?? '');
-                $p->MultiCell($boxW - 10, 20, $name, 0, 'C', false, 0, $x + 5, $y + 42, true, 0, false, true, 20, 'M');
-                $p->SetFont('helvetica', '', 6.5);
-                $signedAt = trim((string)($participant['signed_at'] ?? ''));
-                $method = trim((string)($participant['method'] ?? ''));
-                $meta = $signedAt !== '' ? date('d/m/Y H:i', strtotime($signedAt)) : '';
-                if ($method !== '') $meta .= ($meta !== '' ? ' · ' : '') . $method;
-                $p->SetXY($x + 5, $y + 65);
-                $p->Cell($boxW - 10, 10, $meta, 0, 0, 'C');
+
+            $p->Rect($x, $y, $w, $rowH);
+            $p->Line($x + $nameW, $y, $x + $nameW, $y + $rowH);
+
+            $name = trim((string)($participant['name'] ?? ''));
+            $p->SetFont('helvetica', 'B', 8.0);
+            $p->SetTextColor(0, 0, 0);
+            $p->MultiCell($nameW - 12.0, 17.0, $name, 0, 'L', false, 0, $x + 6.0, $y + 4.0, true, 0, false, true, 17.0, 'M');
+
+            $signedAt = trim((string)($participant['signed_at'] ?? ''));
+            $dateLabel = $signedAt !== '' ? date('d/m/Y H:i', strtotime($signedAt)) : 'Pendiente de firma';
+            $p->SetFont('helvetica', '', 7.0);
+            $p->SetTextColor(75, 75, 75);
+            $p->SetXY($x + 6.0, $y + 25.0);
+            $p->Cell($nameW - 12.0, 12.0, $dateLabel, 0, 0, 'L');
+
+            $path = trim((string)($participant['path'] ?? ''));
+            if ($path !== '' && is_file($path)) {
+                $p->Image(
+                    $path,
+                    $x + $nameW + 7.0,
+                    $y + 5.0,
+                    $signatureW - 14.0,
+                    $rowH - 10.0,
+                    '',
+                    '',
+                    '',
+                    true,
+                    300,
+                    '',
+                    false,
+                    false,
+                    0,
+                    'CM',
+                    false,
+                    false
+                );
             }
-            $y += $boxH + 8;
+
+            $y += $rowH + 3.0;
         }
+
         return $y;
     }
 
