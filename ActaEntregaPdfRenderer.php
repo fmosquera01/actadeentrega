@@ -463,7 +463,7 @@ class ActaEntregaPdfRenderer
             $this->drawTrimmedSignature((string)$d['firma_entrega'], $x + 4, $y + 2, $w - 8, 22);
         }
         // Casilla inferior (cargo + nombre)
-        $p->Rect($x, $y + 26, $w, 27);
+        $p->Rect($x, $y + 26, $w, 34);
         $p->SetTextColor(0, 0, 0);
         $p->SetFont('helvetica', 'B', 7.5);
         $p->SetXY($x, $y + 28);
