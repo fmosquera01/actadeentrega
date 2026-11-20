@@ -6,7 +6,7 @@ global $DB;
 
 $id = (int)($_GET['id'] ?? 0);
 $row = $DB->request([
-    'SELECT' => ['id', 'recipient_users_id', 'pdf_path', 'pdf_sha256'],
+    'SELECT' => ['id', 'recipient_users_id', 'issuer_users_id', 'snapshot', 'issuer_signature_path', 'manager_signature_path', 'manager_signed_at', 'pdf_path', 'pdf_sha256'],
     'FROM' => 'glpi_plugin_actadeentrega_actas',
     'WHERE' => ['id' => $id],
     'LIMIT' => 1,
@@ -17,8 +17,13 @@ if (!$row) Html::displayNotFoundError();
 $canReadAll = Session::haveRight('plugin_actadeentrega', READ);
 $userId = (int)Session::getLoginUserID();
 $isParticipant = (int)$row['recipient_users_id'] === $userId;
+$snapshot = json_decode((string)$row['snapshot'], true) ?: [];
+$isIssuer = (int)$row['issuer_users_id'] === $userId && trim((string)$row['issuer_signature_path']) !== '';
+$isManager = (int)($snapshot['user']['manager_users_id'] ?? 0) === $userId
+    && trim((string)$row['manager_signature_path']) !== ''
+    && !empty($row['manager_signed_at']);
 
-if (!$isParticipant && !$canReadAll && $DB->tableExists('glpi_plugin_actadeentrega_acta_users')) {
+if (!$isParticipant && !$isIssuer && !$isManager && !$canReadAll && $DB->tableExists('glpi_plugin_actadeentrega_acta_users')) {
     $participant = $DB->request([
         'SELECT' => ['id'],
         'FROM' => 'glpi_plugin_actadeentrega_acta_users',
@@ -31,7 +36,7 @@ if (!$isParticipant && !$canReadAll && $DB->tableExists('glpi_plugin_actadeentre
     $isParticipant = (bool)$participant;
 }
 
-if (!$canReadAll && !$isParticipant) {
+if (!$canReadAll && !$isParticipant && !$isIssuer && !$isManager) {
     Html::displayNotFoundError();
 }
 
