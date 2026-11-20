@@ -64,6 +64,7 @@ final class PluginActadeentregaActaPresentation
                 $signed = trim((string)($participant['signature_path'] ?? '')) !== '' && !empty($participant['signed_at']);
                 $html .= '<tr><td>' . self::e($participant['name'] ?? '') . '</td><td>' . ($signed ? '<span class="ae-signed">Firmado</span>' : '<span class="ae-pending">Pendiente</span>') . '</td><td>' . ($signed ? self::date((string)$participant['signed_at']) : '—') . '</td></tr>';
             }
+            $html .= '<tr><td>' . self::e($user['manager'] ?? 'Gerente / jefe de área') . ' (Gerente)</td><td><span class="ae-pending">Pendiente de su firma</span></td><td>—</td></tr>';
             $html .= '</tbody></table></div>';
         }
         $html .= '<p class="ae-note">Revise los activos, sus números de serie, el responsable que recibe y las firmas registradas antes de autorizar el acta.</p></section>';
@@ -99,6 +100,7 @@ final class PluginActadeentregaActaPresentation
             $signed = trim((string)($participant['signature_path'] ?? '')) !== '' && !empty($participant['signed_at']);
             $html .= '<tr><td style="border:1px solid #dce2e8">' . self::e($participant['name'] ?? '') . '</td><td style="border:1px solid #dce2e8">' . ($signed ? 'Firmado' : 'Pendiente') . '</td><td style="border:1px solid #dce2e8">' . ($signed ? self::date((string)$participant['signed_at']) : '—') . '</td></tr>';
         }
+        $html .= '<tr><td style="border:1px solid #dce2e8">' . self::e($user['manager'] ?? 'Gerente / jefe de área') . ' (Gerente)</td><td style="border:1px solid #dce2e8">Pendiente de su firma</td><td style="border:1px solid #dce2e8">—</td></tr>';
         $html .= '</table><p style="margin-top:16px;color:#52616d">Revise el detalle completo del acta en el enlace seguro antes de autorizar la firma.</p>';
         return $html;
     }
