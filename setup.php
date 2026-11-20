@@ -15,9 +15,10 @@ require_once __DIR__ . '/src/Acta.php';
 
 function plugin_init_actadeentrega(): void
 {
-    global $PLUGIN_HOOKS;
+    global $PLUGIN_HOOKS, $CFG_GLPI;
     $PLUGIN_HOOKS['csrf_compliant']['actadeentrega'] = true;
     Notification_NotificationTemplate::registerMode('actadeentrega', 'Acta de Entrega', 'actadeentrega');
+    $CFG_GLPI['notifications_actadeentrega'] = true;
     $PLUGIN_HOOKS['helpdesk_menu_entry']['actadeentrega'] = '/front/my-acts.php';
     $PLUGIN_HOOKS['helpdesk_menu_entry_icon']['actadeentrega'] = 'ti ti-file-certificate';
     \Glpi\Http\Firewall::addPluginStrategyForLegacyScripts(
