@@ -5,7 +5,7 @@ require_once dirname(__DIR__) . '/ActaEntregaPdfRenderer.php';
 
 final class PluginActadeentregaActaPdf
 {
-    public static function generate(array $snapshot, string $signaturePath, string $outputPath, ?string $recipientSignaturePath = null, ?string $managerSignaturePath = null): void
+    public static function generate(array $snapshot, string $signaturePath, string $outputPath, array|string|null $recipientSignaturePath = null, ?string $managerSignaturePath = null): void
     {
         if (!class_exists('TCPDF')) {
             throw new RuntimeException('TCPDF no está disponible en GLPI.');
@@ -50,7 +50,8 @@ final class PluginActadeentregaActaPdf
             'fecha' => $dateLabel,
             'equipos' => $equipment,
             'clausulas' => null,
-            'firma_responsable' => $recipientSignaturePath,
+            'firmas_responsables' => is_array($recipientSignaturePath) ? $recipientSignaturePath : [],
+            'firma_responsable' => is_string($recipientSignaturePath) ? $recipientSignaturePath : null,
             'firma_gerente' => $managerSignaturePath,
             'firma_entrega' => $signaturePath,
             'responsable_entrega' => (string)($snapshot['issuer']['name'] ?? ''),
