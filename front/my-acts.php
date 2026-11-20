@@ -20,7 +20,7 @@ $rows = $DB->request([
     ],
     'WHERE' => [
         'au.users_id' => $userId,
-        'au.signed_at' => ['<>', null],
+        ['NOT' => ['au.signed_at' => null]],
     ],
     'ORDER' => ['a.id DESC'],
 ]);
