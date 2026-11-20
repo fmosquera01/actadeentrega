@@ -64,7 +64,7 @@ final class PluginActadeentregaSigningService
         $DB->insert('glpi_plugin_actadeentrega_signatures', [
             'plugin_actadeentrega_actas_id' => $actaId,
             'users_id' => $userId, 'role' => $role, 'method' => $method,
-            'detail' => $detail, 'signed_at' => date('Y-m-d H:i:s'),
+            'detail' => $detail, 'signed_at' => gmdate('Y-m-d H:i:s'),
         ]);
     }
 
@@ -105,7 +105,7 @@ final class PluginActadeentregaSigningService
         }
 
         $managerSignedAt = trim((string)($acta['manager_signed_at'] ?? ''));
-        if ($managerSignedAt === '') $managerSignedAt = gmdate('Y-m-d H:i:s');
+        if ($managerSignedAt === '') $managerSignedAt = gmgmdate('Y-m-d H:i:s');
 
         require_once __DIR__ . '/ActaPdf.php';
         $base = rtrim(GLPI_VAR_DIR, DIRECTORY_SEPARATOR) . '/_plugins/actadeentrega/acts';
@@ -128,7 +128,7 @@ final class PluginActadeentregaSigningService
             'recipient_signature_path' => $holderSignature,
             'pdf_path' => '_plugins/actadeentrega/acts/' . $file,
             'pdf_sha256' => $hash, 'status' => 'Firmada completamente',
-            'manager_signed_at' => date('Y-m-d H:i:s'),
+            'manager_signed_at' => gmdate('Y-m-d H:i:s'),
         ], ['id' => (int)$acta['id']]);
     }
 }
