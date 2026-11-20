@@ -22,6 +22,15 @@ final class PluginActadeentregaNotificationActadeentregaSetting extends Notifica
         return 'actadeentrega';
     }
 
+    /**
+     * Open the plugin's own mail configuration instead of GLPI's generic
+     * CommonDBTM form endpoint, which is not implemented for this adapter.
+     */
+    public static function getFormURL($full = true)
+    {
+        return Plugin::getWebDir('actadeentrega', $full) . '/front/config.php';
+    }
+
     protected function showFormConfig()
     {
         echo '<div class="alert alert-info">';
