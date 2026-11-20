@@ -10,10 +10,6 @@ $table = 'glpi_plugin_actadeentrega_mail_recipients';
 $escape = static fn($value): string => htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!Session::validateCSRFToken($_POST)) {
-        Html::displayErrorAndDie('La solicitud no superó la validación de seguridad.');
-    }
-
     $action = (string)($_POST['action'] ?? '');
     if ($action === 'add') {
         $email = strtolower(trim((string)($_POST['email'] ?? '')));
