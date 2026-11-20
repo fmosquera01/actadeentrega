@@ -19,10 +19,25 @@ final class PluginActadeentregaSigningService
         global $DB;
         $rows = [];
         foreach ($DB->request([
-            'SELECT' => '*', 'FROM' => 'glpi_plugin_actadeentrega_acta_users',
-            'WHERE' => ['plugin_actadeentrega_actas_id' => $actaId],
-            'ORDER' => ['sort_order ASC', 'id ASC'],
-        ]) as $row) $rows[] = $row;
+            'SELECT' => [
+                'p.*',
+                'u.firstname AS signer_firstname',
+                'u.realname AS signer_realname',
+                'u.name AS signer_login',
+            ],
+            'FROM' => 'glpi_plugin_actadeentrega_acta_users AS p',
+            'LEFT JOIN' => [
+                'glpi_users AS u' => ['ON' => ['p' => 'users_id', 'u' => 'id']],
+            ],
+            'WHERE' => ['p.plugin_actadeentrega_actas_id' => $actaId],
+            'ORDER' => ['p.sort_order ASC', 'p.id ASC'],
+        ]) as $row) {
+            $row['name'] = trim((string)($row['signer_firstname'] ?? '') . ' ' . (string)($row['signer_realname'] ?? ''));
+            if ($row['name'] === '') {
+                $row['name'] = (string)($row['signer_login'] ?? '');
+            }
+            $rows[] = $row;
+        }
         return $rows;
     }
 
