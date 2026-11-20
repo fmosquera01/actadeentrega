@@ -48,7 +48,7 @@ class ActaEntregaPdfRenderer
         $y = $this->datos($d, $y);
         $y = $this->equipos($d, $y + 8);
         $y = $this->clausulas($d, $y + 12);
-        $y = $this->firmaResponsables((string)($d['responsable'] ?? ''), $y + 10, $d['firma_responsable'] ?? null);
+        $y = $this->firmaResponsables((array)($d['firmas_responsables'] ?? []), $y + 10);
         $y = $this->firmaBloque('FIRMA DEL GERENTE O JEFE DE AREA', $d['gerente'] ?? '', $d['firma_gerente'] ?? null, $y + 12);
         $this->entrega($d, $y + 12);
 
@@ -210,36 +210,57 @@ class ActaEntregaPdfRenderer
         return $y;
     }
 
-    /* Todos los colaboradores aparecen a la izquierda; el espacio derecho queda libre para firmas manuscritas. */
-    private function firmaResponsables(string $nombres, float $y, ?string $firma = null): float
+    /* Cada responsable dispone de su propio recuadro y firma. */
+    private function firmaResponsables(array $participants, float $y): float
     {
         $p = $this->pdf;
-        $names = array_values(array_filter(array_map('trim', preg_split('/\\r?\\n/', $nombres))));
-        if (!$names) $names = [''];
+        if (!$participants) {
+            $participants = [['name' => 'Responsable', 'path' => null]];
+        }
         $p->SetDrawColor(0, 0, 0);
         $p->SetLineWidth(0.6);
         $p->SetTextColor(0, 0, 0);
         $p->SetFont('helvetica', 'B', 10.5);
         $p->SetXY(81, $y);
-        $p->Cell(433, 17, 'FIRMA RESPONSABLE', 1, 0, 'L');
-        $y += 27;
-        $x = 120.0;
-        $nameW = 239.0;
-        $sigW = 163.0;
-        // Un solo bloque: nombres apilados en la celda izquierda y una única
-        // celda amplia a la derecha para recoger todas las firmas manuscritas.
-        // Más altura por participante y mayor interlineado para separar visualmente los nombres.
-        $rowH = max(32.0, count($names) * 17.0);
-        $p->Rect($x, $y, $nameW, $rowH);
-        $p->Rect($x + $nameW, $y, $sigW, $rowH);
-        if ($firma && is_file($firma)) {
-            $p->Image($firma, $x + $nameW + 4, $y + 2, $sigW - 8, $rowH - 4, '', '', '', true, 300, '', false, false, 0, 'CM', false, false);
+        $p->Cell(433, 17, 'FIRMAS DE RESPONSABLES Y CORRESPONSABLES', 1, 0, 'L');
+        $y += 25;
+
+        $columns = count($participants) > 1 ? 2 : 1;
+        $gap = 12.0;
+        $boxW = $columns === 2 ? (433.0 - $gap) / 2 : 433.0;
+        $boxH = 76.0;
+
+        foreach (array_chunk($participants, $columns) as $row) {
+            if ($y + $boxH > 790.0) {
+                $p->AddPage();
+                $y = 42.0;
+                $p->SetFont('helvetica', 'B', 10.5);
+                $p->SetXY(81, $y);
+                $p->Cell(433, 17, 'FIRMAS DE RESPONSABLES (CONTINUACIÓN)', 0, 0, 'L');
+                $y += 25;
+            }
+            foreach ($row as $index => $participant) {
+                $x = 81.0 + $index * ($boxW + $gap);
+                $p->Rect($x, $y, $boxW, $boxH);
+                $path = (string)($participant['path'] ?? '');
+                if ($path !== '' && is_file($path)) {
+                    $p->Image($path, $x + 8, $y + 5, $boxW - 16, 39, '', '', '', true, 300, '', false, false, 0, 'CM', false, false);
+                }
+                $p->SetFont('helvetica', 'B', 8.5);
+                $p->SetXY($x + 5, $y + 46);
+                $name = (string)($participant['name'] ?? '');
+                $p->MultiCell($boxW - 10, 12, $name, 0, 'C', false, 0, $x + 5, $y + 46, true, 0, false, true, 12, 'M');
+                $p->SetFont('helvetica', '', 7);
+                $signedAt = trim((string)($participant['signed_at'] ?? ''));
+                $method = trim((string)($participant['method'] ?? ''));
+                $meta = $signedAt !== '' ? date('d/m/Y H:i', strtotime($signedAt)) : '';
+                if ($method !== '') $meta .= ($meta !== '' ? ' · ' : '') . $method;
+                $p->SetXY($x + 5, $y + 60);
+                $p->Cell($boxW - 10, 10, $meta, 0, 0, 'C');
+            }
+            $y += $boxH + 8;
         }
-        $p->SetFont('helvetica', 'B', 8.5);
-        $p->setCellHeightRatio(1.55);
-        $p->MultiCell($nameW, $rowH, implode("\n", $names), 0, 'C', false, 0, $x, $y, true, 0, false, true, $rowH, 'M');
-        $p->setCellHeightRatio(1.25);
-        return $y + $rowH;
+        return $y;
     }
 
     /* -------------------------------------------------- bloques de firma */
