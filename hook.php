@@ -3,8 +3,7 @@ declare(strict_types=1);
 
 /**
  * Database lifecycle for Acta de Entrega.
- * Uses GLPI's Migration API; direct SQL execution is blocked by GLPI 11.
- * Existing issued acts are preserved when the plugin is uninstalled.
+ * Uses GLPI's Migration API; issued acts are preserved on uninstall.
  */
 function plugin_actadeentrega_install(): bool
 {
@@ -64,8 +63,6 @@ function plugin_actadeentrega_install(): bool
         }
     }
 
-    // Token temporal para la firma remota del gerente. Solo se almacena SHA-256;
-    // el token original se entrega una única vez al mecanismo de notificación.
     $publicTokenColumns = [
         'manager_token_hash' => "char(64) NOT NULL DEFAULT ''",
         'manager_token_created_at' => 'datetime NULL',
@@ -97,35 +94,33 @@ function plugin_actadeentrega_install(): bool
         ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}");
     }
 
+    // Destinatarios institucionales adicionales para notificaciones de actas.
+    $mailRecipients = 'glpi_plugin_actadeentrega_mail_recipients';
+    if (!$DB->tableExists($mailRecipients)) {
+        $migration->addPostQuery("CREATE TABLE IF NOT EXISTS `{$mailRecipients}` (
+            `id` int unsigned NOT NULL AUTO_INCREMENT,
+            `email` varchar(255) NOT NULL,
+            `is_active` tinyint NOT NULL DEFAULT 1,
+            `date_creation` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `uniq_email` (`email`)
+        ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}");
+    }
+
     $migration->executeMigration();
 
-    // Register the plugin right for every existing profile, without
-    // duplicating records when installation/upgrade is run more than once.
     $rights = ['plugin_actadeentrega'];
-    $profiles = $DB->request([
-        'SELECT' => ['id'],
-        'FROM'   => Profile::getTable(),
-    ]);
-
+    $profiles = $DB->request(['SELECT' => ['id'], 'FROM' => Profile::getTable()]);
     foreach ($profiles as $profile) {
-        $profiles_id = (int) $profile['id'];
+        $profiles_id = (int)$profile['id'];
         $existingRights = ProfileRight::getProfileRights($profiles_id, $rights);
-
         foreach ($rights as $rightName) {
             if (!array_key_exists($rightName, $existingRights)) {
-                $DB->insert(
-                    ProfileRight::getTable(),
-                    [
-                        'profiles_id' => $profiles_id,
-                        'name'        => $rightName,
-                    ]
-                );
+                $DB->insert(ProfileRight::getTable(), ['profiles_id' => $profiles_id, 'name' => $rightName]);
             }
         }
     }
-
     ProfileRight::cleanAllPossibleRights();
-
     return true;
 }
 
@@ -136,6 +131,5 @@ function plugin_actadeentrega_upgrade($previousVersion): bool
 
 function plugin_actadeentrega_uninstall(): bool
 {
-    // Los documentos emitidos son registros institucionales: se preservan.
     return true;
 }
