@@ -104,11 +104,14 @@ final class PluginActadeentregaSigningService
             ];
         }
 
+        $managerSignedAt = trim((string)($acta['manager_signed_at'] ?? ''));
+        if ($managerSignedAt === '') $managerSignedAt = gmdate('Y-m-d H:i:s');
+
         require_once __DIR__ . '/ActaPdf.php';
         $base = rtrim(GLPI_VAR_DIR, DIRECTORY_SEPARATOR) . '/_plugins/actadeentrega/acts';
         $file = 'acta_final_' . (int)$acta['id'] . '_' . bin2hex(random_bytes(5)) . '.pdf';
         $path = $base . '/' . $file;
-        PluginActadeentregaActaPdf::generate($snapshot, $issuer, $path, $signatures, $manager);
+        PluginActadeentregaActaPdf::generate($snapshot, $issuer, $path, $signatures, $manager, $managerSignedAt);
         $hash = hash_file('sha256', $path);
         if (!$hash) { @unlink($path); throw new RuntimeException('No se pudo calcular la integridad del PDF final.'); }
 
