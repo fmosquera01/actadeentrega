@@ -58,6 +58,8 @@ $actNumber = (string)($acta['act_number'] ?? '');
 $baseUrl = rtrim((string)($_SERVER['SCRIPT_NAME'] ?? ''), '/');
 
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Referrer-Policy: no-referrer');
+header('X-Robots-Tag: noindex, nofollow');
 header('Pragma: no-cache');
 echo '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Firma de Acta de Entrega</title>';
 echo '<link rel="stylesheet" href="/css/palettes/default.css"><link rel="stylesheet" href="/css/styles.css">';
