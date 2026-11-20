@@ -34,8 +34,8 @@ final class PluginActadeentregaActa extends CommonDBTM
 
         global $DB;
         $isOwnProfile = $userId === (int)Session::getLoginUserID();
-        echo "<div class='d-flex justify-content-between align-items-center mb-3'><h3>Mis actas de entrega</h3>";
-        if (!$isOwnProfile) echo "<h3>Actas de entrega del colaborador</h3>";
+        $heading = $isOwnProfile ? 'Mis actas de entrega' : 'Actas de entrega del colaborador';
+        echo "<div class='d-flex justify-content-between align-items-center mb-3'><h3>" . htmlspecialchars($heading, ENT_QUOTES, 'UTF-8') . "</h3>";
         if (Session::haveRight(self::$rightname, CREATE)) {
             echo "<a class='btn btn-primary' href='/front/user.form.php?id=" . $userId . "&forcetab=PluginActadeentregaActa$1&acta_action=new'>Nueva acta</a>";
         }
