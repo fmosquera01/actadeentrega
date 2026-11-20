@@ -130,6 +130,18 @@ function plugin_actadeentrega_install(): bool
           AND p.signature_path = ''
           AND a.recipient_signature_path <> ''");
     
+    // Actas en curso que antes avanzaban con la firma del titular solamente
+    // regresan a la etapa de responsables si aún faltan corresponsables.
+    $migration->addPostQuery("UPDATE `glpi_plugin_actadeentrega_actas` a
+        SET a.status = 'Pendiente de firma del colaborador'
+        WHERE a.status = 'Pendiente de firma del gerente'
+          AND EXISTS (
+              SELECT 1
+              FROM `{$participants}` p
+              WHERE p.plugin_actadeentrega_actas_id = a.id
+                AND (p.signature_path = '' OR p.signed_at IS NULL)
+          )");
+
     $migration->executeMigration();
 
     $rights = ['plugin_actadeentrega'];
