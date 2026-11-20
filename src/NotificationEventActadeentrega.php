@@ -33,6 +33,7 @@ final class PluginActadeentregaNotificationEventActadeentrega
                 $mailer = new GLPIMailer();
                 $mail = $mailer->getEmail();
                 $mail->from(new Address((string)$queue->fields['sender'], (string)$queue->fields['sendername']));
+                $hasTo = false;
                 foreach (array_values(array_unique($to)) as $address) {
                     if (!filter_var($address, FILTER_VALIDATE_EMAIL)) throw new RuntimeException('La cola contiene un destinatario Para no válido.');
                     if (!isset($hasTo)) {
