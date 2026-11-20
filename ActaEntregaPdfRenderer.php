@@ -294,19 +294,37 @@ class ActaEntregaPdfRenderer
             $maxW = $signatureSlotW - 8.0;
             $maxH = $signatureRowH - 10.0;
 
-            [$imagePath, $sourceW, $sourceH] = $this->trimSignatureImage($path);
-            if ($sourceW < 1 || $sourceH < 1) {
-                continue;
-            }
-            $scale = min($maxW / $sourceW, $maxH / $sourceH);
-            $imageW = $sourceW * $scale;
-            $imageH = $sourceH * $scale;
-            $imageX = $slotX + (($signatureSlotW - $imageW) / 2.0);
-            $imageY = $slotY + (($signatureRowH - $imageH) / 2.0);
-            $p->Image($imagePath, $imageX, $imageY, $imageW, $imageH, '', '', '', false, 300);
+            $this->drawTrimmedSignature($path, $slotX + 4.0, $slotY + 5.0, $maxW, $maxH);
         }
 
         return $y + $cellH;
+    }
+
+    /** Dibuja solo el trazo recortado, manteniendo proporciones y sin ampliar el lienzo vacío. */
+    private function drawTrimmedSignature(string $path, float $x, float $y, float $maxW, float $maxH): void
+    {
+        if ($path === '' || !is_file($path)) {
+            return;
+        }
+        [$imagePath, $sourceW, $sourceH] = $this->trimSignatureImage($path);
+        if ($sourceW < 1 || $sourceH < 1) {
+            return;
+        }
+        $scale = min($maxW / $sourceW, $maxH / $sourceH);
+        $imageW = $sourceW * $scale;
+        $imageH = $sourceH * $scale;
+        $this->pdf->Image(
+            $imagePath,
+            $x + (($maxW - $imageW) / 2.0),
+            $y + (($maxH - $imageH) / 2.0),
+            $imageW,
+            $imageH,
+            '',
+            '',
+            '',
+            false,
+            300
+        );
     }
 
     /**
@@ -419,7 +437,7 @@ class ActaEntregaPdfRenderer
         $p->SetFont('helvetica', 'B', 8.5);
         $p->MultiCell($nameW, $h, $nombre, 0, 'C', false, 0, $x, $y, true, 0, false, true, $h, 'M');
         if ($firma && is_file($firma)) {
-            $p->Image($firma, $x + $nameW + 4, $y + 2, $sigW - 8, $h - 4, '', '', '', true, 300, '', false, false, 0, 'CM', false, false);
+            $this->drawTrimmedSignature($firma, $x + $nameW + 4, $y + 2, $sigW - 8, $h - 4);
         }
         return $y + $h;
     }
@@ -439,7 +457,7 @@ class ActaEntregaPdfRenderer
         // Casilla superior (firma / sello)
         $p->Rect($x, $y, $w, 26);
         if (!empty($d['firma_entrega']) && is_file($d['firma_entrega'])) {
-            $p->Image($d['firma_entrega'], $x + 4, $y + 2, $w - 8, 22, '', '', '', true, 300, '', false, false, 0, 'CM', false, false);
+            $this->drawTrimmedSignature((string)$d['firma_entrega'], $x + 4, $y + 2, $w - 8, 22);
         }
         // Casilla inferior (cargo + nombre)
         $p->Rect($x, $y + 26, $w, 27);
