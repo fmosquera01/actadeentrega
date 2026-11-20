@@ -19,7 +19,7 @@ final class PluginActadeentregaPublicSigningService
         if ((string)($acta['status'] ?? '') !== 'Pendiente de firma del gerente'
             || empty($acta['recipient_signature_path'])
             || !PluginActadeentregaSigningService::allParticipantsSigned((int)$acta['id'])) {
-            throw new RuntimeException('El colaborador debe firmar antes de solicitar la firma remota del gerente.');
+            throw new RuntimeException('Todos los responsables y corresponsables deben firmar antes de solicitar la firma remota del gerente.');
         }
 
         $snapshot = json_decode((string)($acta['snapshot'] ?? ''), true);
@@ -109,7 +109,7 @@ final class PluginActadeentregaPublicSigningService
             || (string)$acta['status'] !== 'Pendiente de firma del gerente'
             || empty($acta['recipient_signature_path'])
             || !PluginActadeentregaSigningService::allParticipantsSigned((int)$acta['id'])) {
-            throw new RuntimeException('El enlace de firma no es válido, ya fue utilizado o ha vencido.');
+            throw new RuntimeException('El enlace de firma no es válido, ya fue utilizado, ha vencido o faltan firmas de responsables.');
         }
 
         $snapshot = json_decode((string)$acta['snapshot'], true);
