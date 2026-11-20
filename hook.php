@@ -107,6 +107,34 @@ function plugin_actadeentrega_install(): bool
         ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}");
     }
 
+    // Firma independiente, método, fecha e integridad para cada responsable.
+    $participantColumns = [
+        'signature_path' => "varchar(500) NOT NULL DEFAULT ''",
+        'signature_sha256' => "char(64) NOT NULL DEFAULT ''",
+        'signature_method' => "varchar(30) NOT NULL DEFAULT ''",
+        'signed_at' => 'datetime NULL',
+    ];
+    foreach ($participantColumns as $field => $definition) {
+        if (!$DB->fieldExists($participants, $field)) {
+            $migration->addPostQuery("ALTER TABLE `{$participants}` ADD `{$field}` {$definition}");
+        }
+    }
+    // Compatibilidad: conservar como firma del titular la firma principal de actas anteriores.
+    $migration->addPostQuery("UPDATE `{$participants}` p
+        INNER JOIN `glpi_plugin_actadeentrega_actas` a
+            ON a.id = p.plugin_actadeentrega_actas_id
+        SET p.signature_path = a.recipient_signature_path,
+            p.signature_sha256 = CASE
+                WHEN a.recipient_signature_path <> '' AND a.recipient_signature_path IS NOT NULL
+                THEN SHA2(LOAD_FILE(a.recipient_signature_path), 256)
+                ELSE ''
+            END,
+            p.signature_method = 'legacy',
+            p.signed_at = COALESCE(a.recipient_signed_at, a.date_creation)
+        WHERE p.is_holder = 1
+          AND p.signature_path = ''
+          AND a.recipient_signature_path <> ''");
+    
     $migration->executeMigration();
 
     $rights = ['plugin_actadeentrega'];
