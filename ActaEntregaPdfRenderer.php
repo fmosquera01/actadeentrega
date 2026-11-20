@@ -52,7 +52,7 @@ class ActaEntregaPdfRenderer
         $y = $this->equipos($d, $y + 8);
         $y = $this->clausulas($d, $y + 12);
         $y = $this->firmaResponsables((array)($d['firmas_responsables'] ?? []), $y + 10);
-        $y = $this->firmaBloque('FIRMA DEL GERENTE O JEFE DE AREA', $d['gerente'] ?? '', $d['firma_gerente'] ?? null, $y + 12);
+        $y = $this->firmaBloque('FIRMA DEL GERENTE O JEFE DE AREA', $d['gerente'] ?? '', $d['firma_gerente'] ?? null, $y + 12, (string)($d['firma_gerente_signed_at'] ?? ''));
         $this->entrega($d, $y + 12);
 
         $binary = $p->Output('', 'S');
@@ -273,12 +273,12 @@ class ActaEntregaPdfRenderer
 
             $signedAt = trim((string)($participant['signed_at'] ?? ''));
             if ($signedAt !== '') {
-                $timestamp = strtotime($signedAt);
-                if ($timestamp !== false) {
+                $timestamp = self::formatEcuadorDateTime($signedAt);
+                if ($timestamp !== '') {
                     $p->SetFont('helvetica', '', 6.5);
                     $p->SetTextColor(75, 75, 75);
                     $p->SetXY($x + 6.0, $nameY + 9.0);
-                    $p->Cell($nameW - 12.0, 7.0, date('d/m/Y H:i', $timestamp), 0, 0, 'L');
+                    $p->Cell($nameW - 12.0, 7.0, $timestamp, 0, 0, 'L');
                 }
             }
 
@@ -410,7 +410,7 @@ class ActaEntregaPdfRenderer
     }
 
     /* -------------------------------------------------- bloques de firma */
-    private function firmaBloque(string $titulo, string $nombre, ?string $firma, float $y): float
+    private function firmaBloque(string $titulo, string $nombre, ?string $firma, float $y, string $signedAt = ''): float
     {
         $p = $this->pdf;
         if ($y + 70.0 > 790.0) {
@@ -435,7 +435,10 @@ class ActaEntregaPdfRenderer
         $p->Rect($x, $y, $nameW, $h);
         $p->Rect($x + $nameW, $y, $sigW, $h);
         $p->SetFont('helvetica', 'B', 8.5);
-        $p->MultiCell($nameW, $h, $nombre, 0, 'C', false, 0, $x, $y, true, 0, false, true, $h, 'M');
+        $nameText = $nombre;
+        $localSignedAt = self::formatEcuadorDateTime($signedAt);
+        if ($localSignedAt !== '') $nameText .= "\n" . $localSignedAt;
+        $p->MultiCell($nameW, $h, $nameText, 0, 'C', false, 0, $x, $y, true, 0, false, true, $h, 'M');
         if ($firma && is_file($firma)) {
             $this->drawTrimmedSignature($firma, $x + $nameW + 4, $y + 2, $sigW - 8, $h - 4);
         }
@@ -467,6 +470,26 @@ class ActaEntregaPdfRenderer
         $p->Cell($w, 11, 'RESPONSABLE DE ENTREGA', 0, 0, 'C');
         $p->SetXY($x, $y + 39);
         $p->Cell($w, 11, (string)($d['responsable_entrega'] ?? ''), 0, 0, 'C');
+        $issuerSignedAt = self::formatEcuadorDateTime((string)($d['firma_entrega_signed_at'] ?? ''));
+        if ($issuerSignedAt !== '') {
+            $p->SetFont('helvetica', '', 6.2);
+            $p->SetXY($x, $y + 49);
+            $p->Cell($w, 8, $issuerSignedAt, 0, 0, 'C');
+        }
+    }
+
+    /** Los timestamps se almacenan en UTC y se presentan en la zona horaria oficial de Ecuador continental. */
+    private static function formatEcuadorDateTime(string $value): string
+    {
+        $value = trim($value);
+        if ($value === '') return '';
+        try {
+            return (new DateTimeImmutable($value, new DateTimeZone('UTC')))
+                ->setTimezone(new DateTimeZone('America/Guayaquil'))
+                ->format('d/m/Y H:i');
+        } catch (Throwable $e) {
+            return '';
+        }
     }
 
     /** Quita etiquetas, convierte saltos/espacios raros en un solo espacio y recorta. */
