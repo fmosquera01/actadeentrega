@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-define('PLUGIN_ACTADEENTREGA_VERSION', '0.2.35');
+define('PLUGIN_ACTADEENTREGA_VERSION', '0.2.36');
 
 require_once __DIR__ . '/src/ActaService.php';
 require_once __DIR__ . '/src/ActaPdf.php';
@@ -15,6 +15,8 @@ function plugin_init_actadeentrega(): void
 {
     global $PLUGIN_HOOKS;
     $PLUGIN_HOOKS['csrf_compliant']['actadeentrega'] = true;
+    $PLUGIN_HOOKS['helpdesk_menu_entry']['actadeentrega'] = '/front/my-acts.php';
+    $PLUGIN_HOOKS['helpdesk_menu_entry_icon']['actadeentrega'] = 'ti ti-file-certificate';
     \Glpi\Http\Firewall::addPluginStrategyForLegacyScripts(
         'actadeentrega',
         '#^/front/public-sign\\.php$#',
