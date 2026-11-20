@@ -17,7 +17,8 @@ final class PluginActadeentregaPublicSigningService
         global $DB;
 
         if ((string)($acta['status'] ?? '') !== 'Pendiente de firma del gerente'
-            || empty($acta['recipient_signature_path'])) {
+            || empty($acta['recipient_signature_path'])
+            || !PluginActadeentregaSigningService::allParticipantsSigned((int)$acta['id'])) {
             throw new RuntimeException('El colaborador debe firmar antes de solicitar la firma remota del gerente.');
         }
 
@@ -106,7 +107,8 @@ final class PluginActadeentregaPublicSigningService
             || empty($acta['manager_token_expires_at'])
             || strtotime((string)$acta['manager_token_expires_at']) < time()
             || (string)$acta['status'] !== 'Pendiente de firma del gerente'
-            || empty($acta['recipient_signature_path'])) {
+            || empty($acta['recipient_signature_path'])
+            || !PluginActadeentregaSigningService::allParticipantsSigned((int)$acta['id'])) {
             throw new RuntimeException('El enlace de firma no es válido, ya fue utilizado o ha vencido.');
         }
 
