@@ -326,6 +326,7 @@ echo <<<JS
    mode=nextMode;
    document.getElementById('aeSignAsManager').value='1';
    document.getElementById('aeParticipantId').value='';
+   document.getElementById('aeMethod').value=mode;
    document.getElementById('aeModalTitle').textContent=(mode==='pin'?'Autorización con PIN · ':'Firma manuscrita · ')+"Gerente";
    document.getElementById('aeDrawArea').style.display=mode==='draw'?'block':'none';
    document.getElementById('aePinArea').style.display=mode==='pin'?'block':'none';
