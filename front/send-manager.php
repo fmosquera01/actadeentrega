@@ -47,22 +47,7 @@ try {
     $mail->to(new Symfony\Component\Mime\Address($emailAddress, (string)($snapshot['user']['manager'] ?? '')));
     $mail->subject('Firma pendiente - Acta de Entrega ' . (string)$acta['act_number']);
 
-    $cc = [];
-    if ($DB->tableExists('glpi_plugin_actadeentrega_mail_recipients')) {
-        foreach ($DB->request([
-            'SELECT' => ['email'],
-            'FROM' => 'glpi_plugin_actadeentrega_mail_recipients',
-            'WHERE' => ['is_active' => 1],
-        ]) as $recipient) {
-            $extra = strtolower(trim((string)$recipient['email']));
-            if ($extra !== '' && $extra !== strtolower($emailAddress) && filter_var($extra, FILTER_VALIDATE_EMAIL)) {
-                $cc[$extra] = true;
-            }
-        }
-    }
-    foreach (array_keys($cc) as $extra) {
-        $mail->addCc(new Symfony\Component\Mime\Address($extra));
-    }
+
 
     $mail->html(
         '<!doctype html><html><body style="font-family:Arial,sans-serif;color:#263746">'
@@ -86,7 +71,7 @@ try {
     }
 
     PluginActadeentregaPublicSigningService::markEmailSent($id);
-    PluginActadeentregaSigningService::audit($id, (int)($snapshot['user']['manager_users_id'] ?? 0), 'gerente', 'correo_firma', 'Enlace de firma enviado al correo del gerente y destinatarios adicionales configurados.');
+    PluginActadeentregaSigningService::audit($id, (int)($snapshot['user']['manager_users_id'] ?? 0), 'gerente', 'correo_firma', 'Enlace de firma enviado únicamente al correo registrado del gerente.');
     Session::addMessageAfterRedirect('Correo de firma enviado correctamente al gerente.', true, INFO);
 } catch (Throwable $e) {
     if ($token !== '') {
