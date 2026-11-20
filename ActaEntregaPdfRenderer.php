@@ -18,6 +18,9 @@ class ActaEntregaPdfRenderer
     /** @var TCPDF */
     private $pdf;
 
+    /** @var string[] Archivos PNG temporales recortados para el PDF. */
+    private array $temporaryImages = [];
+
     private const CLAUSULAS = [
         'El responsable directo del equipo al momento de la entrega debe recibir una inducción de cómo se utiliza el equipo y el sistema por parte del Dpto. de Sistemas.',
         'El equipo que se le entrega está en perfectas condiciones. En caso de que el equipo no esté funcionado entregarlo al Dpto. de Sistemas.',
@@ -52,7 +55,13 @@ class ActaEntregaPdfRenderer
         $y = $this->firmaBloque('FIRMA DEL GERENTE O JEFE DE AREA', $d['gerente'] ?? '', $d['firma_gerente'] ?? null, $y + 12);
         $this->entrega($d, $y + 12);
 
-        return $p->Output('', 'S');
+        $binary = $p->Output('', 'S');
+        foreach ($this->temporaryImages as $temporaryImage) {
+            if (is_file($temporaryImage)) {
+                @unlink($temporaryImage);
+            }
+        }
+        return $binary;
     }
 
     /* ------------------------------------------------------- logo + título */
@@ -210,19 +219,25 @@ class ActaEntregaPdfRenderer
         return $y;
     }
 
-    /* Firma de cada responsable en una fila compacta: datos a la izquierda y rúbrica a la derecha. */
+    /* Una sola celda para todos los responsables: nombres a la izquierda y firmas a la derecha. */
     private function firmaResponsables(array $participants, float $y): float
     {
         $p = $this->pdf;
         if (!$participants) {
-            $participants = [['name' => 'Responsable', 'path' => null]];
+            $participants = [['name' => 'Responsable', 'path' => null, 'signed_at' => '']];
         }
 
         $x = 81.0;
         $w = 433.0;
-        $rowH = 46.0;
         $nameW = 245.0;
         $signatureW = $w - $nameW;
+        $headingH = 17.0;
+        $topGap = 3.0;
+        $nameLineH = 18.0;
+        $signatureRowH = 38.0;
+        $signatureRows = (int)ceil(count($participants) / 3);
+        $contentH = max(count($participants) * $nameLineH, $signatureRows * $signatureRowH);
+        $cellH = max(38.0, $contentH + 10.0);
         $bottom = 790.0;
 
         $drawHeading = static function (float $top) use ($p, $x, $w): float {
@@ -232,61 +247,148 @@ class ActaEntregaPdfRenderer
             $p->SetLineWidth(0.6);
             $p->SetXY($x, $top);
             $p->Cell($w, 17, 'FIRMA RESPONSABLE', 1, 0, 'L');
-            return $top + 21.0;
+            return $top + 20.0;
         };
 
         $y = $drawHeading($y);
-        foreach ($participants as $participant) {
-            if ($y + $rowH > $bottom) {
-                $p->AddPage();
-                $y = $drawHeading(42.0);
-            }
+        if ($y + $cellH > $bottom) {
+            $p->AddPage();
+            $y = $drawHeading(42.0);
+        }
 
-            $p->Rect($x, $y, $w, $rowH);
-            $p->Line($x + $nameW, $y, $x + $nameW, $y + $rowH);
+        // Un único contorno exterior; solo se separan las zonas de nombres y firmas.
+        $p->SetDrawColor(0, 0, 0);
+        $p->SetLineWidth(0.6);
+        $p->Rect($x, $y, $w, $cellH);
+        $p->Line($x + $nameW, $y, $x + $nameW, $y + $cellH);
 
+        $signatureSlotW = $signatureW / 3.0;
+        foreach ($participants as $index => $participant) {
+            $nameY = $y + 5.0 + ($index * $nameLineH);
             $name = trim((string)($participant['name'] ?? ''));
-            $p->SetFont('helvetica', 'B', 8.0);
+            $p->SetFont('helvetica', 'B', 7.7);
             $p->SetTextColor(0, 0, 0);
-            $p->MultiCell($nameW - 12.0, 17.0, $name, 0, 'L', false, 0, $x + 6.0, $y + 4.0, true, 0, false, true, 17.0, 'M');
+            $p->SetXY($x + 6.0, $nameY);
+            $p->Cell($nameW - 12.0, 9.0, $name, 0, 0, 'L');
 
             $signedAt = trim((string)($participant['signed_at'] ?? ''));
-            $dateLabel = $signedAt !== '' ? date('d/m/Y H:i', strtotime($signedAt)) : '';
-            if ($dateLabel !== '') {
-                $p->SetFont('helvetica', '', 7.0);
-                $p->SetTextColor(75, 75, 75);
-                $p->SetXY($x + 6.0, $y + 25.0);
-                $p->Cell($nameW - 12.0, 12.0, $dateLabel, 0, 0, 'L');
+            if ($signedAt !== '') {
+                $timestamp = strtotime($signedAt);
+                if ($timestamp !== false) {
+                    $p->SetFont('helvetica', '', 6.5);
+                    $p->SetTextColor(75, 75, 75);
+                    $p->SetXY($x + 6.0, $nameY + 9.0);
+                    $p->Cell($nameW - 12.0, 7.0, date('d/m/Y H:i', $timestamp), 0, 0, 'L');
+                }
             }
 
             $path = trim((string)($participant['path'] ?? ''));
-            if ($path !== '' && is_file($path)) {
-                $imageW = min($signatureW - 14.0, 125.0);
-                $p->Image(
-                    $path,
-                    $x + $w - 7.0 - $imageW,
-                    $y + 5.0,
-                    $imageW,
-                    $rowH - 10.0,
-                    '',
-                    '',
-                    '',
-                    true,
-                    300,
-                    '',
-                    false,
-                    false,
-                    0,
-                    'CM',
-                    false,
-                    false
-                );
+            if ($path === '' || !is_file($path)) {
+                continue;
             }
 
-            $y += $rowH + 3.0;
+            $slotColumn = $index % 3;
+            $slotRow = intdiv($index, 3);
+            $slotX = $x + $nameW + ($slotColumn * $signatureSlotW);
+            $slotY = $y + 5.0 + ($slotRow * $signatureRowH);
+            $maxW = $signatureSlotW - 8.0;
+            $maxH = $signatureRowH - 10.0;
+
+            [$imagePath, $sourceW, $sourceH] = $this->trimSignatureImage($path);
+            if ($sourceW < 1 || $sourceH < 1) {
+                continue;
+            }
+            $scale = min($maxW / $sourceW, $maxH / $sourceH);
+            $imageW = $sourceW * $scale;
+            $imageH = $sourceH * $scale;
+            $imageX = $slotX + (($signatureSlotW - $imageW) / 2.0);
+            $imageY = $slotY + (($signatureRowH - $imageH) / 2.0);
+            $p->Image($imagePath, $imageX, $imageY, $imageW, $imageH, '', '', '', false, 300);
         }
 
-        return $y;
+        return $y + $cellH;
+    }
+
+    /**
+     * Recorta el lienzo transparente/blanco alrededor de la tinta de una firma.
+     * Si GD no está disponible o el PNG no puede procesarse, usa la imagen original.
+     *
+     * @return array{0:string,1:int,2:int}
+     */
+    private function trimSignatureImage(string $path): array
+    {
+        $size = @getimagesize($path);
+        $width = (int)($size[0] ?? 0);
+        $height = (int)($size[1] ?? 0);
+        if ($width < 1 || $height < 1) {
+            return [$path, 1, 1];
+        }
+
+        if (!function_exists('imagecreatefrompng') || !function_exists('imagecrop')) {
+            return [$path, $width, $height];
+        }
+
+        $source = @imagecreatefrompng($path);
+        if (!$source) {
+            return [$path, $width, $height];
+        }
+
+        $minX = $width;
+        $minY = $height;
+        $maxX = -1;
+        $maxY = -1;
+        for ($py = 0; $py < $height; $py++) {
+            for ($px = 0; $px < $width; $px++) {
+                $rgba = imagecolorat($source, $px, $py);
+                $alpha = ($rgba & 0x7F000000) >> 24;
+                $red = ($rgba >> 16) & 0xFF;
+                $green = ($rgba >> 8) & 0xFF;
+                $blue = $rgba & 0xFF;
+                $hasInk = $alpha < 120 && ($red < 250 || $green < 250 || $blue < 250);
+                if ($hasInk) {
+                    $minX = min($minX, $px);
+                    $minY = min($minY, $py);
+                    $maxX = max($maxX, $px);
+                    $maxY = max($maxY, $py);
+                }
+            }
+        }
+
+        if ($maxX < $minX || $maxY < $minY) {
+            imagedestroy($source);
+            return [$path, $width, $height];
+        }
+
+        // Un margen mínimo evita cortar antialiasing, pero elimina el lienzo sobrante.
+        $pad = 2;
+        $minX = max(0, $minX - $pad);
+        $minY = max(0, $minY - $pad);
+        $maxX = min($width - 1, $maxX + $pad);
+        $maxY = min($height - 1, $maxY + $pad);
+        $cropW = $maxX - $minX + 1;
+        $cropH = $maxY - $minY + 1;
+        $cropped = @imagecrop($source, ['x' => $minX, 'y' => $minY, 'width' => $cropW, 'height' => $cropH]);
+        imagedestroy($source);
+        if (!$cropped) {
+            return [$path, $width, $height];
+        }
+
+        imagesavealpha($cropped, true);
+        $temporary = tempnam(sys_get_temp_dir(), 'ae-sign-');
+        if ($temporary === false) {
+            imagedestroy($cropped);
+            return [$path, $width, $height];
+        }
+        $pngPath = $temporary . '.png';
+        @unlink($temporary);
+        $saved = @imagepng($cropped, $pngPath);
+        imagedestroy($cropped);
+        if (!$saved) {
+            return [$path, $width, $height];
+        }
+
+        $this->temporaryImages[] = $pngPath;
+        return [$pngPath, $cropW, $cropH];
     }
 
     /* -------------------------------------------------- bloques de firma */
