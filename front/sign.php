@@ -200,6 +200,7 @@ foreach ($participants as $participant) {
         $pinRow = $DB->request(['SELECT'=>['signature_path','signature_sha256','pin_hash'],'FROM'=>'glpi_plugin_informeglopi_user_signatures','WHERE'=>['users_id'=>$pid],'LIMIT'=>1])->current();
         $hasPin = $pinRow && trim((string)$pinRow['signature_path']) !== '' && trim((string)$pinRow['signature_sha256']) !== '' && trim((string)$pinRow['pin_hash']) !== '';
     }
+    $nameJson = htmlspecialchars((string)json_encode($name, JSON_HEX_APOS|JSON_HEX_QUOT), ENT_QUOTES, 'UTF-8');
     echo '<div class="ae-signbox"><h3>' . ((int)$participant['is_holder'] === 1 ? 'RESPONSABLE PRINCIPAL' : 'CORRESPONSABLE') . '</h3>';
     if ($signed) {
         echo '<div class="ae-signed"><i class="fas fa-check-circle"></i> Firma registrada</div><div class="ae-help">Fecha: ' . $esc($participant['signed_at']) . ' · Método: ' . $esc($participant['signature_method']) . '</div>';
