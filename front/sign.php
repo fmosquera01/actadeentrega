@@ -202,20 +202,32 @@ if ($managerId > 0 && $DB->tableExists('glpi_plugin_informeglopi_user_signatures
 
 $managerEmail = '';
 if ($managerId > 0 && $DB->tableExists('glpi_useremails')) {
-    $emailWhere = ['users_id' => $managerId];
     if ($DB->fieldExists('glpi_useremails', 'is_default')) {
-        $emailWhere['is_default'] = 1;
+        $defaultEmailRow = $DB->request([
+            'SELECT' => ['email'],
+            'FROM' => 'glpi_useremails',
+            'WHERE' => ['users_id' => $managerId, 'is_default' => 1],
+            'ORDER' => ['id ASC'],
+            'LIMIT' => 1,
+        ])->current();
+        $defaultEmail = trim((string)($defaultEmailRow['email'] ?? ''));
+        if (filter_var($defaultEmail, FILTER_VALIDATE_EMAIL)) {
+            $managerEmail = $defaultEmail;
+        }
     }
-    $emailRow = $DB->request([
-        'SELECT' => ['email'],
-        'FROM' => 'glpi_useremails',
-        'WHERE' => $emailWhere,
-        'ORDER' => ['id ASC'],
-        'LIMIT' => 1,
-    ])->current();
-    $candidateEmail = trim((string)($emailRow['email'] ?? ''));
-    if (filter_var($candidateEmail, FILTER_VALIDATE_EMAIL)) {
-        $managerEmail = $candidateEmail;
+    if ($managerEmail === '') {
+        foreach ($DB->request([
+            'SELECT' => ['email'],
+            'FROM' => 'glpi_useremails',
+            'WHERE' => ['users_id' => $managerId],
+            'ORDER' => ['id ASC'],
+        ]) as $emailRow) {
+            $candidateEmail = trim((string)($emailRow['email'] ?? ''));
+            if (filter_var($candidateEmail, FILTER_VALIDATE_EMAIL)) {
+                $managerEmail = $candidateEmail;
+                break;
+            }
+        }
     }
 }
 
