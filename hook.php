@@ -78,6 +78,34 @@ function plugin_actadeentrega_install(): bool
         }
     }
 
+    // Configuración del correo automático de cierre a Activo Fijo.
+    $mailConfig = 'glpi_plugin_actadeentrega_mail_config';
+    if (!$DB->tableExists($mailConfig)) {
+        $migration->addPostQuery("CREATE TABLE IF NOT EXISTS `{$mailConfig}` (
+            `id` int unsigned NOT NULL,
+            `to_emails` text NOT NULL,
+            `cc_emails` text NOT NULL,
+            `subject_template` varchar(500) NOT NULL,
+            `body_template` longtext NOT NULL,
+            `is_enabled` tinyint NOT NULL DEFAULT 0,
+            `date_mod` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}");
+    }
+
+    $finalMailColumns = [
+        'final_mail_status' => "varchar(20) NOT NULL DEFAULT 'no_enviado'",
+        'final_mail_queue_id' => 'int unsigned NOT NULL DEFAULT 0',
+        'final_mail_queued_at' => 'datetime NULL',
+        'final_mail_sent_at' => 'datetime NULL',
+        'final_mail_error' => 'text NULL',
+    ];
+    foreach ($finalMailColumns as $field => $definition) {
+        if (!$DB->fieldExists($table, $field)) {
+            $migration->addPostQuery("ALTER TABLE `{$table}` ADD `{$field}` {$definition}");
+        }
+    }
+
     $signatures = 'glpi_plugin_actadeentrega_signatures';
     if (!$DB->tableExists($signatures)) {
         $migration->addPostQuery("CREATE TABLE IF NOT EXISTS `{$signatures}` (
