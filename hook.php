@@ -133,7 +133,9 @@ function plugin_actadeentrega_install(): bool
     // Actas en curso que antes avanzaban con la firma del titular solamente
     // regresan a la etapa de responsables si aún faltan corresponsables.
     $migration->addPostQuery("UPDATE `glpi_plugin_actadeentrega_actas` a
-        SET a.status = 'Pendiente de firma del colaborador'
+        SET a.status = 'Pendiente de firma del colaborador',
+            a.manager_token_hash = '',
+            a.manager_token_revoked_at = NOW()
         WHERE a.status = 'Pendiente de firma del gerente'
           AND EXISTS (
               SELECT 1
