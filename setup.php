@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-define('PLUGIN_ACTADEENTREGA_VERSION', '0.2.27');
+define('PLUGIN_ACTADEENTREGA_VERSION', '0.2.28');
 
 require_once __DIR__ . '/src/ActaService.php';
 require_once __DIR__ . '/src/ActaPdf.php';
@@ -15,10 +15,10 @@ function plugin_init_actadeentrega(): void
 {
     global $PLUGIN_HOOKS;
     $PLUGIN_HOOKS['csrf_compliant']['actadeentrega'] = true;
-    \\Glpi\\Http\\Firewall::addPluginStrategyForLegacyScripts(
+    \Glpi\Http\Firewall::addPluginStrategyForLegacyScripts(
         'actadeentrega',
         '#^/front/public-sign\\.php$#',
-        \\Glpi\\Http\\Firewall::STRATEGY_NO_CHECK
+        \Glpi\Http\Firewall::STRATEGY_NO_CHECK
     );
     $PLUGIN_HOOKS['menu_entry']['actadeentrega'] = true;
     $PLUGIN_HOOKS['menu_toadd']['actadeentrega'] = ['plugins' => [PluginActadeentregaMenu::class]];
