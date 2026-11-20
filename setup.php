@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-define('PLUGIN_ACTADEENTREGA_VERSION', '0.2.50');
+define('PLUGIN_ACTADEENTREGA_VERSION', '0.2.51');
 
 require_once __DIR__ . '/src/ActaService.php';
 require_once __DIR__ . '/src/ActaPdf.php';
@@ -17,6 +17,12 @@ require_once __DIR__ . '/src/Acta.php';
 function plugin_init_actadeentrega(): void
 {
     global $PLUGIN_HOOKS, $CFG_GLPI;
+    // GLPI 11 reads this key for every registered notification mode.
+    // Initialize it when the plugin mode is first registered; the native
+    // NotificationSettingConfig form persists subsequent changes in core config.
+    if (!array_key_exists('notifications_actadeentrega', $CFG_GLPI)) {
+        $CFG_GLPI['notifications_actadeentrega'] = 0;
+    }
     $PLUGIN_HOOKS['csrf_compliant']['actadeentrega'] = true;
     Notification_NotificationTemplate::registerMode('actadeentrega', 'Acta de Entrega', 'actadeentrega');
     $PLUGIN_HOOKS['helpdesk_menu_entry']['actadeentrega'] = '/front/my-acts.php';
