@@ -7,7 +7,8 @@ $userId = (int)Session::getLoginUserID();
 if ($userId < 1) Html::displayNotFoundError();
 
 global $DB;
-$rows = $DB->request([
+$rowsByActa = [];
+$participantRows = $DB->request([
     'SELECT' => [
         'a.id', 'a.act_number', 'a.act_date', 'a.status', 'a.snapshot',
         'au.signed_at', 'au.signature_method',
@@ -24,6 +25,37 @@ $rows = $DB->request([
     ],
     'ORDER' => ['a.id DESC'],
 ]);
+foreach ($participantRows as $row) {
+    $rowsByActa[(int)$row['id']] = $row;
+}
+
+// Incluir también las actas firmadas como gerente o técnico emisor.
+// Se excluyen los eventos de generación de enlace y envío de correo.
+if ($DB->tableExists('glpi_plugin_actadeentrega_signatures')) {
+    $auditRows = $DB->request([
+        'SELECT' => [
+            'a.id', 'a.act_number', 'a.act_date', 'a.status', 'a.snapshot',
+            's.signed_at', 's.method AS signature_method',
+        ],
+        'FROM' => 'glpi_plugin_actadeentrega_signatures AS s',
+        'INNER JOIN' => [
+            'glpi_plugin_actadeentrega_actas AS a' => [
+                'ON' => ['s' => 'plugin_actadeentrega_actas_id', 'a' => 'id'],
+            ],
+        ],
+        'WHERE' => [
+            's.users_id' => $userId,
+            's.method' => ['pin_local', 'firma_dibujada', 'pin_remoto', 'pin_glpi'],
+        ],
+        'ORDER' => ['s.signed_at DESC'],
+    ]);
+    foreach ($auditRows as $row) {
+        $actaId = (int)$row['id'];
+        if (!isset($rowsByActa[$actaId])) $rowsByActa[$actaId] = $row;
+    }
+}
+$rows = array_values($rowsByActa);
+usort($rows, static fn($a, $b) => (int)$b['id'] <=> (int)$a['id']);
 
 $isHelpdesk = Session::getCurrentInterface() === 'helpdesk';
 if ($isHelpdesk) {
