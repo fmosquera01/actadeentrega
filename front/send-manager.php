@@ -17,6 +17,9 @@ $token = '';
 try {
     $acta = PluginActadeentregaSigningService::acta($id);
     $token = PluginActadeentregaPublicSigningService::createToken($acta);
+    // createToken actualiza el correo y el hash del token en BD; recargar el acta
+    // para no usar el valor anterior que traía la consulta inicial.
+    $acta = PluginActadeentregaSigningService::acta($id);
     $emailAddress = trim((string)($acta['manager_email'] ?? ''));
     if (!filter_var($emailAddress, FILTER_VALIDATE_EMAIL)) {
         throw new RuntimeException('No se pudo validar el correo del gerente.');
