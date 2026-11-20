@@ -251,19 +251,22 @@ class ActaEntregaPdfRenderer
             $p->MultiCell($nameW - 12.0, 17.0, $name, 0, 'L', false, 0, $x + 6.0, $y + 4.0, true, 0, false, true, 17.0, 'M');
 
             $signedAt = trim((string)($participant['signed_at'] ?? ''));
-            $dateLabel = $signedAt !== '' ? date('d/m/Y H:i', strtotime($signedAt)) : 'Pendiente de firma';
-            $p->SetFont('helvetica', '', 7.0);
-            $p->SetTextColor(75, 75, 75);
-            $p->SetXY($x + 6.0, $y + 25.0);
-            $p->Cell($nameW - 12.0, 12.0, $dateLabel, 0, 0, 'L');
+            $dateLabel = $signedAt !== '' ? date('d/m/Y H:i', strtotime($signedAt)) : '';
+            if ($dateLabel !== '') {
+                $p->SetFont('helvetica', '', 7.0);
+                $p->SetTextColor(75, 75, 75);
+                $p->SetXY($x + 6.0, $y + 25.0);
+                $p->Cell($nameW - 12.0, 12.0, $dateLabel, 0, 0, 'L');
+            }
 
             $path = trim((string)($participant['path'] ?? ''));
             if ($path !== '' && is_file($path)) {
+                $imageW = min($signatureW - 14.0, 125.0);
                 $p->Image(
                     $path,
-                    $x + $nameW + 7.0,
+                    $x + $w - 7.0 - $imageW,
                     $y + 5.0,
-                    $signatureW - 14.0,
+                    $imageW,
                     $rowH - 10.0,
                     '',
                     '',
