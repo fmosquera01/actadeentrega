@@ -6,7 +6,7 @@ global $DB;
 
 $id = (int)($_GET['id'] ?? 0);
 $row = $DB->request([
-    'SELECT' => ['id', 'recipient_users_id', 'issuer_users_id', 'snapshot', 'issuer_signature_path', 'manager_signature_path', 'manager_signed_at', 'pdf_path', 'pdf_sha256'],
+    'SELECT' => ['id', 'recipient_users_id', 'issuer_users_id', 'snapshot', 'issuer_signature_path', 'manager_signature_path', 'manager_signed_at', 'issuer_signature_path', 'status', 'pdf_path', 'pdf_sha256'],
     'FROM' => 'glpi_plugin_actadeentrega_actas',
     'WHERE' => ['id' => $id],
     'LIMIT' => 1,
@@ -38,6 +38,59 @@ if (!$isParticipant && !$isIssuer && !$isManager && !$canReadAll && $DB->tableEx
 
 if (!$canReadAll && !$isParticipant && !$isIssuer && !$isManager) {
     Html::displayNotFoundError();
+}
+
+// Los PDF preliminares se reconstruyen al abrirlos para aplicar siempre
+// el diseño vigente y reflejar las firmas disponibles. Los PDF finales se conservan.
+if ((string)$row['status'] !== 'Firmada completamente'
+    && trim((string)$row['issuer_signature_path']) !== ''
+    && is_file((string)$row['issuer_signature_path'])) {
+    try {
+        require_once __DIR__ . '/../src/ActaPdf.php';
+        $participants = [];
+        if ($DB->tableExists('glpi_plugin_actadeentrega_acta_users')) {
+            foreach ($DB->request([
+                'SELECT' => ['users_id', 'signature_path', 'signed_at', 'signature_method'],
+                'FROM' => 'glpi_plugin_actadeentrega_acta_users',
+                'WHERE' => ['plugin_actadeentrega_actas_id' => $id],
+                'ORDER' => ['sort_order ASC', 'id ASC'],
+            ]) as $participantRow) {
+                $participants[] = [
+                    'users_id' => (int)$participantRow['users_id'],
+                    'name' => getUserName((int)$participantRow['users_id']),
+                    'path' => (string)($participantRow['signature_path'] ?? ''),
+                    'signed_at' => (string)($participantRow['signed_at'] ?? ''),
+                    'method' => (string)($participantRow['signature_method'] ?? ''),
+                ];
+            }
+        }
+        $directory = rtrim(GLPI_VAR_DIR, DIRECTORY_SEPARATOR) . '/_plugins/actadeentrega/acts';
+        if (!is_dir($directory) && !mkdir($directory, 0750, true) && !is_dir($directory)) {
+            throw new RuntimeException('No se pudo preparar el PDF preliminar.');
+        }
+        $filename = 'acta_preview_' . $id . '_' . bin2hex(random_bytes(5)) . '.pdf';
+        $newPath = $directory . '/' . $filename;
+        PluginActadeentregaActaPdf::generate(
+            $snapshot,
+            (string)$row['issuer_signature_path'],
+            $newPath,
+            $participants,
+            trim((string)$row['manager_signature_path']) !== '' ? (string)$row['manager_signature_path'] : null
+        );
+        $newHash = hash_file('sha256', $newPath);
+        if (!$newHash) {
+            @unlink($newPath);
+            throw new RuntimeException('No se pudo verificar el PDF preliminar.');
+        }
+        $DB->update('glpi_plugin_actadeentrega_actas', [
+            'pdf_path' => '_plugins/actadeentrega/acts/' . $filename,
+            'pdf_sha256' => $newHash,
+        ], ['id' => $id]);
+        $row['pdf_path'] = '_plugins/actadeentrega/acts/' . $filename;
+        $row['pdf_sha256'] = $newHash;
+    } catch (Throwable $e) {
+        Html::displayErrorAndDie('No se pudo actualizar el PDF del acta: ' . $e->getMessage());
+    }
 }
 
 // En la interfaz Self-Service solo se consulta un acta después de que
