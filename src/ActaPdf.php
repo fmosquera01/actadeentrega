@@ -56,7 +56,7 @@ final class PluginActadeentregaActaPdf
                 'name' => (string)($participant['name'] ?? ''),
                 'path' => $saved['path'] ?? null,
                 'signed_at' => $saved['signed_at'] ?? '',
-                'method' => $saved['method'] ?? '',
+                'method' => match ((string)($saved['method'] ?? '')) { 'pin_local' => 'PIN personal', 'firma_dibujada' => 'Firma manuscrita', 'legacy' => 'Firma anterior', default => (string)($saved['method'] ?? ''), },
             ];
         }
 
