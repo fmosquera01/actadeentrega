@@ -267,6 +267,10 @@ class ActaEntregaPdfRenderer
     private function firmaBloque(string $titulo, string $nombre, ?string $firma, float $y): float
     {
         $p = $this->pdf;
+        if ($y + 70.0 > 790.0) {
+            $p->AddPage();
+            $y = 42.0;
+        }
         $p->SetDrawColor(0, 0, 0);
         $p->SetLineWidth(0.6);
         $p->SetTextColor(0, 0, 0);
@@ -295,6 +299,10 @@ class ActaEntregaPdfRenderer
     private function entrega(array $d, float $y): void
     {
         $p = $this->pdf;
+        if ($y + 60.0 > 790.0) {
+            $p->AddPage();
+            $y = 42.0;
+        }
         $x = 107.0;
         $w = 150.0;
         $p->SetDrawColor(0, 0, 0);
