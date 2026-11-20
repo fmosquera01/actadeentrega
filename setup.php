@@ -1,12 +1,14 @@
 <?php
 declare(strict_types=1);
 
-define('PLUGIN_ACTADEENTREGA_VERSION', '0.2.47');
+define('PLUGIN_ACTADEENTREGA_VERSION', '0.2.48');
 
 require_once __DIR__ . '/src/ActaService.php';
 require_once __DIR__ . '/src/ActaPdf.php';
 require_once __DIR__ . '/src/SigningService.php';
 require_once __DIR__ . '/src/PublicSigningService.php';
+require_once __DIR__ . '/src/FinalMailService.php';
+require_once __DIR__ . '/src/NotificationEventActadeentrega.php';
 require_once __DIR__ . '/src/Menu.php';
 require_once __DIR__ . '/src/Profile.php';
 require_once __DIR__ . '/src/Acta.php';
@@ -15,6 +17,7 @@ function plugin_init_actadeentrega(): void
 {
     global $PLUGIN_HOOKS;
     $PLUGIN_HOOKS['csrf_compliant']['actadeentrega'] = true;
+    Notification_NotificationTemplate::registerMode('actadeentrega', 'Acta de Entrega', 'actadeentrega');
     $PLUGIN_HOOKS['helpdesk_menu_entry']['actadeentrega'] = '/front/my-acts.php';
     $PLUGIN_HOOKS['helpdesk_menu_entry_icon']['actadeentrega'] = 'ti ti-file-certificate';
     \Glpi\Http\Firewall::addPluginStrategyForLegacyScripts(
