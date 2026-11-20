@@ -57,6 +57,9 @@ try {
                 'signature_method' => $auditMethod,
                 'signed_at' => date('Y-m-d H:i:s'),
             ], ['id' => (int)$participant['id'], 'signature_path' => '']);
+            if (method_exists($DB, 'affectedRows') && $DB->affectedRows() !== 1) {
+                throw new RuntimeException('La firma ya fue registrada por otra operación. Actualice el acta.');
+            }
 
             if ((int)$participant['is_holder'] === 1) {
                 $DB->update('glpi_plugin_actadeentrega_actas', [
@@ -117,7 +120,7 @@ try {
     }
 } catch (Throwable $e) {
     Session::addMessageAfterRedirect($e->getMessage(), false, ERROR);
-    Html::redirect('/plugins/actadeentrega/front/history.php');
+    Html::redirect('/plugins/actadeentrega/front/sign.php?id=' . $id);
 }
 
 $esc = static fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
