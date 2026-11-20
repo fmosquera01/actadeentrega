@@ -185,7 +185,7 @@ echo <<<HTML
 @media print{#page,.ae-toolbar,.ae-actions,.ae-help,.ae-modal{display:none!important}.ae-page{max-width:none;margin:0}.ae-paper{border:0;box-shadow:none;padding:0}.ae-signbox{break-inside:avoid}}
 </style>
 <div class="ae-page"><div class="ae-toolbar"><div><h2 class="mb-0">Acta de Entrega</h2><div class="text-muted">Registro individual de firmas</div></div>
-<div class="d-flex align-items-center gap-2 flex-wrap"><span class="ae-status">{$statusHtml}</span><a class="btn btn-outline-secondary btn-sm" href="/plugins/actadeentrega/front/pdf.php?id={$id}" target="_blank">PDF</a><button class="btn btn-outline-secondary btn-sm" onclick="window.print()">Imprimir</button></div></div>
+<div class="d-flex align-items-center gap-2 flex-wrap"><span class="ae-status">{$statusHtml}</span><a class="btn btn-outline-secondary btn-sm" href="/plugins/actadeentrega/front/pdf.php?id={$id}" target="_blank" rel="noopener">Ver PDF</a></div></div>
 <article class="ae-paper"><header class="ae-dochead"><img src="../logo_songa.jpeg" alt="Songa"><div><h1>ACTA DE ENTREGA DE EQUIPOS</h1><div class="ae-number">N.º {$actNumberHtml}</div></div></header>
 <h2 class="ae-section-title">DATOS</h2><section class="ae-data">
 <div class="ae-field"><label>Gerente o jefe de área</label><div>{$managerNameHtml}</div></div><div class="ae-field"><label>Responsables del equipo</label><div>
