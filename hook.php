@@ -124,11 +124,6 @@ function plugin_actadeentrega_install(): bool
         INNER JOIN `glpi_plugin_actadeentrega_actas` a
             ON a.id = p.plugin_actadeentrega_actas_id
         SET p.signature_path = a.recipient_signature_path,
-            p.signature_sha256 = CASE
-                WHEN a.recipient_signature_path <> '' AND a.recipient_signature_path IS NOT NULL
-                THEN SHA2(LOAD_FILE(a.recipient_signature_path), 256)
-                ELSE ''
-            END,
             p.signature_method = 'legacy',
             p.signed_at = COALESCE(a.recipient_signed_at, a.date_creation)
         WHERE p.is_holder = 1
