@@ -112,7 +112,7 @@ try {
                 'signature_path' => $signaturePath,
                 'signature_sha256' => $signatureHash,
                 'signature_method' => $auditMethod,
-                'signed_at' => date('Y-m-d H:i:s'),
+                'signed_at' => gmdate('Y-m-d H:i:s'),
             ], ['id' => (int)$participant['id'], 'signature_path' => '']);
             if (method_exists($DB, 'affectedRows') && $DB->affectedRows() !== 1) {
                 throw new RuntimeException('La firma ya fue registrada por otra operación. Actualice el acta.');
