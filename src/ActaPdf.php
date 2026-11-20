@@ -41,6 +41,25 @@ final class PluginActadeentregaActaPdf
             throw new RuntimeException('No se encontró logo_songa.jpeg en la raíz del plugin.');
         }
 
+        $signatureByUser = [];
+        if (is_array($recipientSignaturePath)) {
+            foreach ($recipientSignaturePath as $signature) {
+                $signatureByUser[(int)($signature['users_id'] ?? 0)] = $signature;
+            }
+        }
+        $participantRows = [];
+        foreach (($snapshot['participants'] ?? [['users_id' => (int)($user['users_id'] ?? 0), 'name' => ($user['recipient'] ?? '')]]) as $participant) {
+            $participantId = (int)($participant['users_id'] ?? 0);
+            $saved = $signatureByUser[$participantId] ?? [];
+            $participantRows[] = [
+                'users_id' => $participantId,
+                'name' => (string)($participant['name'] ?? ''),
+                'path' => $saved['path'] ?? null,
+                'signed_at' => $saved['signed_at'] ?? '',
+                'method' => $saved['method'] ?? '',
+            ];
+        }
+
         $renderData = [
             'logo' => $logoPath,
             'gerente' => (string)($user['manager'] ?? ''),
@@ -50,7 +69,7 @@ final class PluginActadeentregaActaPdf
             'fecha' => $dateLabel,
             'equipos' => $equipment,
             'clausulas' => null,
-            'firmas_responsables' => is_array($recipientSignaturePath) ? $recipientSignaturePath : [],
+            'firmas_responsables' => $participantRows,
             'firma_responsable' => is_string($recipientSignaturePath) ? $recipientSignaturePath : null,
             'firma_gerente' => $managerSignaturePath,
             'firma_entrega' => $signaturePath,
