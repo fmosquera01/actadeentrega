@@ -3,8 +3,44 @@ declare(strict_types=1);
 
 use Symfony\Component\Mime\Address;
 
-final class PluginActadeentregaNotificationEventActadeentrega
+final class PluginActadeentregaNotificationEventActadeentrega implements NotificationEventInterface
 {
+    public static function raise(
+        $event,
+        CommonGLPI $item,
+        array $options,
+        $label,
+        array $data,
+        NotificationTarget $notificationtarget,
+        NotificationTemplate $template,
+        $notify_me,
+        $emitter = null,
+        ?CommonDBTM $trigger = null
+    ): void {
+        // Final Acta de Entrega messages are queued explicitly by the plugin
+        // after the last required signature; generic notification events are not used.
+    }
+
+    public static function getTargetFieldName()
+    {
+        return 'email';
+    }
+
+    public static function getTargetField(&$data)
+    {
+        return 'email';
+    }
+
+    public static function getAdminData()
+    {
+        return [];
+    }
+
+    public static function getEntityAdminsData($entity)
+    {
+        return [];
+    }
+
     public static function canCron(): bool
     {
         return true;
