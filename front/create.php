@@ -90,7 +90,7 @@ try {
         if (isset($path) && is_file($path)) @unlink($path);
         throw $e;
     }
-    Session::addMessageAfterRedirect('Acta ' . $number . ' creada. Falta la firma del colaborador y posteriormente la del gerente.', true, INFO);
+    Session::addMessageAfterRedirect('Acta ' . $number . ' creada. Deben firmar todos los responsables y posteriormente el gerente.', true, INFO);
     header('Location: /plugins/actadeentrega/front/sign.php?id=' . $actaId, true, 303);
     exit;
 } catch (Throwable $e) {
