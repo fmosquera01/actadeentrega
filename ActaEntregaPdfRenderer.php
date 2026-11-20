@@ -198,8 +198,8 @@ class ActaEntregaPdfRenderer
     private function clausulas(array $d, float $y): float
     {
         $p = $this->pdf;
-        $p->SetTextColor(89, 89, 89);
-        $p->SetFont('times', 'B', 9.5);
+        $p->SetTextColor(0, 0, 0);
+        $p->SetFont('helvetica', 'B', 9.5);
         $p->SetXY(85, $y);
         $p->MultiCell(440, 12, 'Me comprometo con la compañía hacerme responsable del cuidado de este equipo, con las siguientes cláusulas:', 0, 'L', false, 1, 85, $y, true);
         $y = $p->GetY() + 3;
@@ -435,10 +435,16 @@ class ActaEntregaPdfRenderer
         $p->Rect($x, $y, $nameW, $h);
         $p->Rect($x + $nameW, $y, $sigW, $h);
         $p->SetFont('helvetica', 'B', 8.5);
-        $nameText = $nombre;
+        $p->SetTextColor(0, 0, 0);
+        $p->SetXY($x + 3, $y + 7);
+        $p->Cell($nameW - 6, 12, $nombre, 0, 0, 'C');
         $localSignedAt = self::formatEcuadorDateTime($signedAt);
-        if ($localSignedAt !== '') $nameText .= "\n" . $localSignedAt;
-        $p->MultiCell($nameW, $h, $nameText, 0, 'C', false, 0, $x, $y, true, 0, false, true, $h, 'M');
+        if ($localSignedAt !== '') {
+            $p->SetFont('helvetica', '', 6.5);
+            $p->SetTextColor(75, 75, 75);
+            $p->SetXY($x + 3, $y + 21);
+            $p->Cell($nameW - 6, 9, $localSignedAt, 0, 0, 'C');
+        }
         if ($firma && is_file($firma)) {
             $this->drawTrimmedSignature($firma, $x + $nameW + 4, $y + 2, $sigW - 8, $h - 4);
         }
