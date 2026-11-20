@@ -50,6 +50,16 @@ final class PluginActadeentregaPublicSigningService
             throw new RuntimeException('El gerente no tiene firma personal y PIN configurados. La firma deberá recogerse presencialmente.');
         }
 
+        $signatureBase = realpath(rtrim(GLPI_VAR_DIR, DIRECTORY_SEPARATOR) . '/_plugins/informeglpi/signatures/users');
+        $signaturePath = realpath(rtrim(GLPI_VAR_DIR, DIRECTORY_SEPARATOR) . '/' . ltrim((string)$signature['signature_path'], '/'));
+        if (!$signatureBase || !$signaturePath || !str_starts_with($signaturePath, $signatureBase . DIRECTORY_SEPARATOR) || !is_file($signaturePath)) {
+            throw new RuntimeException('La firma personal del gerente no está disponible. Debe actualizarla antes de solicitar la firma remota.');
+        }
+        $signatureHash = hash_file('sha256', $signaturePath);
+        if (!$signatureHash || !hash_equals((string)$signature['signature_sha256'], $signatureHash)) {
+            throw new RuntimeException('La firma personal del gerente no superó la verificación de integridad.');
+        }
+
         $email = self::managerEmail($managerId);
         if ($email === '') {
             throw new RuntimeException('El gerente no tiene un correo electrónico válido registrado. La firma deberá recogerse presencialmente.');
