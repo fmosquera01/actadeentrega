@@ -200,6 +200,25 @@ if ($managerId > 0 && $DB->tableExists('glpi_plugin_informeglopi_user_signatures
     }
 }
 
+$managerEmail = '';
+if ($managerId > 0 && $DB->tableExists('glpi_useremails')) {
+    $emailWhere = ['users_id' => $managerId];
+    if ($DB->fieldExists('glpi_useremails', 'is_default')) {
+        $emailWhere['is_default'] = 1;
+    }
+    $emailRow = $DB->request([
+        'SELECT' => ['email'],
+        'FROM' => 'glpi_useremails',
+        'WHERE' => $emailWhere,
+        'ORDER' => ['id ASC'],
+        'LIMIT' => 1,
+    ])->current();
+    $candidateEmail = trim((string)($emailRow['email'] ?? ''));
+    if (filter_var($candidateEmail, FILTER_VALIDATE_EMAIL)) {
+        $managerEmail = $candidateEmail;
+    }
+}
+
 $date = new DateTimeImmutable((string)($snapshot['date'] ?? $acta['act_date'] ?? 'now'));
 $logoUrl = '../logo_songa.jpeg';
 $statusHtml = $esc($status);
@@ -322,7 +341,13 @@ if (!$managerSigned && $status === 'Pendiente de firma del gerente' && $recipien
     if ($managerHasReusableSignature) {
         echo '<button class="ae-iconbtn" type="button" title="Firmar con PIN personal" aria-label="Firmar con PIN personal" onclick="openSignatureModal(\'manager-pin\')"><i class="fas fa-key"></i></button>';
     }
-    echo '</div><div class="ae-help">El gerente debe realizar personalmente la firma o ingresar su PIN.</div>';
+    if ($managerHasReusableSignature && $managerEmail !== '') {
+        echo '<form method="post" action="/plugins/actadeentrega/front/send-manager.php" class="d-inline"><input type="hidden" name="_glpi_csrf_token" value="' . $esc(Session::getNewCSRFToken(true)) . '"><input type="hidden" name="id" value="' . (int)$id . '"><button class="ae-iconbtn" type="submit" title="Enviar enlace seguro al gerente" aria-label="Enviar enlace seguro al gerente"><i class="fas fa-envelope"></i></button></form>';
+    }
+    echo '</div><div class="ae-help">El gerente debe realizar personalmente la firma o ingresar su PIN.';
+    if ($managerEmail === '') echo ' No tiene correo válido registrado.';
+    elseif (!$managerHasReusableSignature) echo ' No tiene firma personal con PIN habilitada.';
+    echo '</div>';
 } elseif (!$managerSigned && $status === 'Pendiente de firma del colaborador') {
     echo '<div class="ae-help">Disponible después de la firma del colaborador.</div>';
 }
