@@ -360,7 +360,6 @@ if (!$managerSigned && $status === 'Pendiente de firma del gerente' && $recipien
         echo '<button class="ae-iconbtn" type="button" title="Firmar con PIN personal" aria-label="Firmar con PIN personal" onclick="openSignatureModal(\'manager-pin\')"><i class="fas fa-key"></i></button>';
     }
     if ($managerHasReusableSignature && $managerEmail !== '') {
-        echo '<form method="post" action="/plugins/actadeentrega/front/preview-manager-link.php" class="d-inline"><input type="hidden" name="_glpi_csrf_token" value="' . $esc(Session::getNewCSRFToken(true)) . '"><input type="hidden" name="id" value="' . (int)$id . '"><button class="ae-iconbtn" type="submit" title="Generar enlace para probar en navegador (sin enviar correo)" aria-label="Generar enlace de prueba"><i class="fas fa-link"></i></button></form>';
         echo '<form method="post" action="/plugins/actadeentrega/front/send-manager.php" class="d-inline"><input type="hidden" name="_glpi_csrf_token" value="' . $esc(Session::getNewCSRFToken(true)) . '"><input type="hidden" name="id" value="' . (int)$id . '"><button class="ae-iconbtn" type="submit" title="Enviar enlace seguro al gerente por correo" aria-label="Enviar enlace seguro al gerente"><i class="fas fa-envelope"></i></button></form>';
     }
     echo '</div><div class="ae-help">El gerente debe realizar personalmente la firma o ingresar su PIN.';
