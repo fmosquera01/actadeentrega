@@ -38,7 +38,7 @@ try {
             'comment' => (string)($a['comment'] ?? ''),
         ];
     }
-    $now = date('Y-m-d H:i:s');
+    $now = gmdate('Y-m-d H:i:s');
     $snapshot = [
         'date' => $now,
         'user' => [
@@ -51,7 +51,7 @@ try {
         'participants' => $participants,
         'assets' => $assets,
     ];
-    $year = date('Y');
+    $year = (new DateTimeImmutable('now', new DateTimeZone('America/Guayaquil')))->format('Y');
     $prefix = 'AE-' . $year . '-';
     $DB->beginTransaction();
     try {
