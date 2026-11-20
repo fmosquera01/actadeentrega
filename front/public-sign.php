@@ -5,6 +5,7 @@ include('../../../inc/includes.php');
 require_once __DIR__ . '/../src/ActaService.php';
 require_once __DIR__ . '/../src/SigningService.php';
 require_once __DIR__ . '/../src/PublicSigningService.php';
+require_once __DIR__ . '/../src/FinalMailService.php';
 
 $token = (string)($_POST['token'] ?? $_GET['token'] ?? '');
 $acta = null;
@@ -42,6 +43,12 @@ try {
             $fresh = PluginActadeentregaSigningService::acta((int)$acta['id']);
             PluginActadeentregaSigningService::finalize($fresh);
             $DB->commit();
+            try {
+                PluginActadeentregaFinalMailService::enqueue((int)$acta['id']);
+            } catch (Throwable $mailError) {
+                PluginActadeentregaFinalMailService::markSendResult((int)$acta['id'], 'fallido', $mailError->getMessage());
+                Toolbox::logInFile('mail-error', 'Acta de Entrega: no se pudo encolar el correo final del acta ' . (int)$acta['id'] . ': ' . $mailError->getMessage() . "\\n");
+            }
             $success = true;
         } catch (Throwable $e) {
             $DB->rollBack();
@@ -65,7 +72,7 @@ echo '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="vie
 echo '<link rel="stylesheet" href="/css/palettes/default.css"><link rel="stylesheet" href="/css/styles.css">';
 echo '<style>body{background:#f3f5f7;font-family:Arial,sans-serif}.ae-public{max-width:680px;margin:7vh auto;padding:24px}.ae-card{background:#fff;border:1px solid #dce2e8;border-radius:12px;padding:30px;box-shadow:0 8px 30px rgba(20,40,60,.08)}.ae-brand{font-weight:800;color:#174f75;letter-spacing:.04em}.ae-public h1{font-size:24px;margin:18px 0 8px}.ae-muted{color:#64717d;line-height:1.6}.ae-alert{padding:14px;border-radius:7px;background:#fceeed;color:#8a2923}.ae-success{padding:14px;border-radius:7px;background:#eaf6ef;color:#17643a}.ae-terms{margin:0 0 18px;padding:14px 16px;border:1px solid #d6dee6;border-left:4px solid #315b78;border-radius:8px;background:#f7f9fb;color:#263746;font-size:13px;line-height:1.5}.ae-terms strong{display:block;margin-bottom:8px}.ae-terms ol{margin:0;padding-left:21px}.ae-terms li{margin:0 0 7px}.ae-terms li:last-child{margin-bottom:0}</style></head><body><main class="ae-public"><section class="ae-card"><div class="ae-brand">SONGA | INFRAESTRUCTURA IT</div><h1>Firma de Acta de Entrega</h1>';
 if ($success) {
-    echo '<div class="ae-success"><strong>Firma registrada correctamente.</strong><p>El acta ' . $escape($actNumber) . ' quedó firmada y el PDF definitivo fue generado.</p>Ya puede cerrar esta ventana.</div>';
+    echo '<div class="ae-success"><strong>Firma registrada correctamente.</strong><p>El acta ' . $escape($actNumber) . ' quedó firmada y el PDF definitivo fue generado. Se ha iniciado el envío automático a Activo Fijo.</p>Ya puede cerrar esta ventana.</div>';
 } elseif ($error !== '') {
     echo '<div class="ae-alert"><strong>No fue posible completar la firma.</strong><p>' . nl2br($escape($error)) . '</p>Si necesita un nuevo enlace, solicítelo al equipo de Infraestructura IT.</div>';
 } else {
