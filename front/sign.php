@@ -160,6 +160,9 @@ if ($managerId > 0 && $DB->tableExists('glpi_useremails')) {
     }
 }
 $status = (string)$acta['status'];
+$statusHtml = $esc($status);
+$managerNameHtml = $esc($managerName);
+$actNumberHtml = $esc($acta['act_number']);
 $allSigned = PluginActadeentregaSigningService::allParticipantsSigned($id);
 $isFinal = $status === 'Firmada completamente';
 Html::header('Acta de Entrega', $_SERVER['PHP_SELF'], 'plugins', 'PluginActadeentregaMenu');
@@ -181,10 +184,10 @@ echo <<<HTML
 @media print{#page,.ae-toolbar,.ae-actions,.ae-help,.ae-modal{display:none!important}.ae-page{max-width:none;margin:0}.ae-paper{border:0;box-shadow:none;padding:0}.ae-signbox{break-inside:avoid}}
 </style>
 <div class="ae-page"><div class="ae-toolbar"><div><h2 class="mb-0">Acta de Entrega</h2><div class="text-muted">Registro individual de firmas</div></div>
-<div class="d-flex align-items-center gap-2 flex-wrap"><span class="ae-status">{$esc($status)}</span><a class="btn btn-outline-secondary btn-sm" href="/plugins/actadeentrega/front/pdf.php?id={$id}" target="_blank">PDF</a><button class="btn btn-outline-secondary btn-sm" onclick="window.print()">Imprimir</button></div></div>
-<article class="ae-paper"><header class="ae-dochead"><img src="../logo_songa.jpeg" alt="Songa"><div><h1>ACTA DE ENTREGA DE EQUIPOS</h1><div class="ae-number">N.º {$esc($acta['act_number'])}</div></div></header>
+<div class="d-flex align-items-center gap-2 flex-wrap"><span class="ae-status">{$statusHtml}</span><a class="btn btn-outline-secondary btn-sm" href="/plugins/actadeentrega/front/pdf.php?id={$id}" target="_blank">PDF</a><button class="btn btn-outline-secondary btn-sm" onclick="window.print()">Imprimir</button></div></div>
+<article class="ae-paper"><header class="ae-dochead"><img src="../logo_songa.jpeg" alt="Songa"><div><h1>ACTA DE ENTREGA DE EQUIPOS</h1><div class="ae-number">N.º {$actNumberHtml}</div></div></header>
 <h2 class="ae-section-title">DATOS</h2><section class="ae-data">
-<div class="ae-field"><label>Gerente o jefe de área</label><div>{$esc($managerName)}</div></div><div class="ae-field"><label>Responsables del equipo</label><div>
+<div class="ae-field"><label>Gerente o jefe de área</label><div>{$managerNameHtml}</div></div><div class="ae-field"><label>Responsables del equipo</label><div>
 HTML;
 foreach (($snapshot['participants'] ?? []) as $p) echo '<div>' . $esc($p['name'] ?? '') . '</div>';
 echo '</div></div><div class="ae-field"><label>Cargo / Función</label><div>' . $esc($user['jobtitle'] ?? '') . '</div></div><div class="ae-field"><label>Área</label><div>' . $esc($user['area'] ?? '') . '</div></div><div class="ae-field"><label>Departamento</label><div>' . $esc($user['department'] ?? '') . '</div></div><div class="ae-field"><label>Fecha de emisión</label><div>' . $esc($acta['act_date']) . '</div></div></section>';
