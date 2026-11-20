@@ -65,7 +65,7 @@ if ($isHelpdesk) {
 }
 
 $escape = static fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
-$methodLabels = ['pin_local' => 'PIN personal', 'firma_dibujada' => 'Firma manuscrita', 'legacy' => 'Firma anterior'];
+$methodLabels = ['pin_local' => 'PIN personal', 'firma_dibujada' => 'Firma manuscrita', 'pin_remoto' => 'PIN remoto', 'pin_glpi' => 'PIN del técnico', 'legacy' => 'Firma anterior'];
 echo '<div class="container-fluid"><div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3"><div><h2>Mis actas firmadas</h2><p class="text-muted mb-0">Documentos en los que su firma quedó registrada.</p></div></div>';
 echo '<div class="table-responsive"><table class="table table-hover align-middle"><thead><tr><th>N.º de acta</th><th>Fecha</th><th>Activos</th><th>Mi firma</th><th>Estado</th><th>Documento</th></tr></thead><tbody>';
 $count = 0;
