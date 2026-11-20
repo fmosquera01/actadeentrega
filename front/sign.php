@@ -6,6 +6,7 @@ Session::checkRight('plugin_actadeentrega', CREATE);
 require_once __DIR__ . '/../src/ActaService.php';
 require_once __DIR__ . '/../src/SigningService.php';
 require_once __DIR__ . '/../src/ActaPdf.php';
+require_once __DIR__ . '/../src/FinalMailService.php';
 
 global $DB;
 $id = (int)($_GET['id'] ?? $_POST['id'] ?? 0);
@@ -68,7 +69,18 @@ try {
                 throw $e;
             }
 
-            Session::addMessageAfterRedirect('Firma del gerente registrada. El acta quedó firmada y el PDF definitivo fue generado.', true, INFO);
+            $mailNotice = ' Revise la configuración de envío automático a Activo Fijo.';
+            try {
+                $queued = PluginActadeentregaFinalMailService::enqueue($id);
+                $mailNotice = $queued
+                    ? ' El correo para Activo Fijo quedó registrado en la cola de notificaciones de GLPI.'
+                    : ' Revise la configuración de envío automático a Activo Fijo.';
+            } catch (Throwable $mailError) {
+                PluginActadeentregaFinalMailService::markSendResult($id, 'fallido', $mailError->getMessage());
+                Toolbox::logInFile('mail-error', 'Acta de Entrega: no se pudo encolar el correo final del acta ' . $id . ': ' . $mailError->getMessage() . "\\n");
+                $mailNotice = ' La firma quedó guardada, pero el correo no pudo agregarse a la cola: ' . $mailError->getMessage();
+            }
+            Session::addMessageAfterRedirect('Firma del gerente registrada. El acta quedó firmada y el PDF definitivo fue generado.' . $mailNotice, true, INFO);
             Html::redirect('/plugins/actadeentrega/front/sign.php?id=' . $id);
         }
 
@@ -300,7 +312,19 @@ if (!$isFinal && !$managerSigned && $status === 'Pendiente de firma del gerente'
     }
     echo '</div><div class="ae-help">Firma manuscrita disponible. ' . ($managerHasPin ? 'También puede usar su PIN personal.' : 'No tiene PIN personal habilitado; la opción PIN y la firma remota no están disponibles.') . ($managerHasPin && $managerEmail !== '' ? ' También puede enviar el enlace seguro por correo.' : ($managerHasPin && $managerEmail === '' ? ' No tiene correo válido registrado para la firma remota.' : '')) . '</div>';
 }
-echo '</div></section><section class="ae-signatures"><div class="ae-signbox"><h3>ENTREGADO POR</h3><div class="ae-signed">Firma del técnico registrada</div><div class="ae-signline">' . $esc($snapshot['issuer']['name'] ?? '') . '</div></div><div class="ae-signbox"><h3>ESTADO</h3><p>' . ($isFinal ? 'Acta firmada y finalizada.' : ($allSigned ? 'Todos los responsables firmaron; pendiente gerente.' : 'Pendiente de firmas de responsables.')) . '</p><div class="ae-signline">' . $esc($acta['act_number']) . '</div></div></section></article></div>';
+$mailStatus = (string)($acta['final_mail_status'] ?? 'no_enviado');
+$mailStatusLabels = ['no_enviado' => 'No enviado', 'en_cola' => 'Pendiente en cola GLPI', 'enviado' => 'Enviado', 'fallido' => 'Fallido', 'deshabilitado' => 'Deshabilitado'];
+echo '</div></section><section class="ae-signatures"><div class="ae-signbox"><h3>ENTREGADO POR</h3><div class="ae-signed">Firma del técnico registrada</div><div class="ae-signline">' . $esc($snapshot['issuer']['name'] ?? '') . '</div></div><div class="ae-signbox"><h3>ESTADO</h3><p>' . ($isFinal ? 'Acta firmada y finalizada.' : ($allSigned ? 'Todos los responsables firmaron; pendiente gerente.' : 'Pendiente de firmas de responsables.')) . '</p>';
+if ($isFinal) {
+    echo '<div class="ae-help">Correo a Activo Fijo: <strong>' . $esc($mailStatusLabels[$mailStatus] ?? $mailStatus) . '</strong>';
+    if (!empty($acta['final_mail_sent_at'])) echo ' · Fecha: ' . $esc($acta['final_mail_sent_at']);
+    if (!empty($acta['final_mail_error'])) echo '<br>Detalle: ' . $esc($acta['final_mail_error']);
+    echo '</div>';
+    if (in_array($mailStatus, ['fallido', 'deshabilitado', 'no_enviado'], true)) {
+        echo '<form method="post" action="/plugins/actadeentrega/front/retry-final-mail.php" class="mt-2"><input type="hidden" name="_glpi_csrf_token" value="' . $esc(Session::getNewCSRFToken(true)) . '"><input type="hidden" name="id" value="' . $id . '"><button class="btn btn-sm btn-outline-primary" type="submit"><i class="ti ti-refresh"></i> Reintentar envío a Activo Fijo</button></form>';
+    }
+}
+echo '<div class="ae-signline">' . $esc($acta['act_number']) . '</div></div></section></article></div>';
 
 if (!$isFinal && in_array($status, ['Pendiente de firma del colaborador', 'Pendiente de firma del gerente'], true)) {
     echo '<div class="modal fade ae-modal" id="aeSignatureModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="aeModalTitle">Firma del responsable</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form method="post" id="aeSignatureForm"><input type="hidden" name="_glpi_csrf_token" value="' . $esc(Session::getNewCSRFToken(true)) . '"><input type="hidden" name="id" value="' . $id . '"><input type="hidden" name="participant_users_id" id="aeParticipantId"><input type="hidden" name="sign_as_manager" id="aeSignAsManager" value="0"><input type="hidden" name="participant_method" id="aeMethod"><input type="hidden" name="signature_data" id="aeSignatureData"><div id="aeDrawArea"><canvas id="aeCanvas" class="ae-modal-canvas" width="1000" height="320"></canvas><div class="text-end mt-2"><button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearAeCanvas()">Limpiar</button></div></div><div id="aePinArea" style="display:none"><label class="form-label" for="aePin">PIN personal de 6 dígitos</label><input id="aePin" class="form-control" style="max-width:240px" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="off"></div><div class="d-flex justify-content-end gap-2 mt-3"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary">Aceptar y firmar</button></div></form></div></div></div></div>';
