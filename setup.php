@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-define('PLUGIN_ACTADEENTREGA_VERSION', '0.2.21');
+define('PLUGIN_ACTADEENTREGA_VERSION', '0.2.22');
 
 require_once __DIR__ . '/src/ActaService.php';
 require_once __DIR__ . '/src/ActaPdf.php';
@@ -43,9 +43,6 @@ function plugin_actadeentrega_check_prerequisites(): bool
 
 function plugin_actadeentrega_check_config(): bool { return true; }
 
-/**
- * Version 0.2.9 reads the mandatory manager from the user's department category.
- */
 function plugin_actadeentrega_update(string $oldVersion): bool
 {
     return plugin_actadeentrega_install();
