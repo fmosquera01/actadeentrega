@@ -159,18 +159,32 @@ final class PluginActadeentregaPublicSigningService
 
         $where = ['users_id' => $userId];
         if ($DB->fieldExists($table, 'is_default')) {
-            $where['is_default'] = 1;
+            $defaultRow = $DB->request([
+                'SELECT' => ['email'],
+                'FROM' => $table,
+                'WHERE' => ['users_id' => $userId, 'is_default' => 1],
+                'ORDER' => ['id ASC'],
+                'LIMIT' => 1,
+            ])->current();
+            $defaultEmail = trim((string)($defaultRow['email'] ?? ''));
+            if (filter_var($defaultEmail, FILTER_VALIDATE_EMAIL)) {
+                return $defaultEmail;
+            }
         }
-        $row = $DB->request([
+
+        // Si no existe correo predeterminado válido, utilizar el primer correo válido registrado.
+        foreach ($DB->request([
             'SELECT' => ['email'],
             'FROM' => $table,
             'WHERE' => $where,
             'ORDER' => ['id ASC'],
-            'LIMIT' => 1,
-        ])->current();
-
-        $email = trim((string)($row['email'] ?? ''));
-        return filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : '';
+        ]) as $row) {
+            $email = trim((string)($row['email'] ?? ''));
+            if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                return $email;
+            }
+        }
+        return '';
     }
 
     private static function audit(int $actaId, int $userId, string $role, string $method, string $detail): void
