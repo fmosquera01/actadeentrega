@@ -15,6 +15,63 @@ try {
     if (!is_array($snapshot)) throw new RuntimeException('El contenido del acta no es válido.');
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        if (($_POST['sign_as_manager'] ?? '') === '1') {
+            if ((string)$acta['status'] !== 'Pendiente de firma del gerente'
+                || !PluginActadeentregaSigningService::allParticipantsSigned($id)) {
+                throw new RuntimeException('El gerente solo puede firmar cuando todos los responsables hayan firmado.');
+            }
+            if (trim((string)($acta['manager_signature_path'] ?? '')) !== '') {
+                throw new RuntimeException('La firma del gerente ya fue registrada.');
+            }
+            $managerId = (int)($snapshot['user']['manager_users_id'] ?? 0);
+            if ($managerId < 1) throw new RuntimeException('No se pudo identificar al gerente asignado.');
+
+            $method = (string)($_POST['participant_method'] ?? 'draw');
+            if ($method === 'pin') {
+                $authorized = PluginActadeentregaActaService::authorizeSignature(
+                    $managerId, (string)($_POST['participant_pin'] ?? '')
+                );
+                $managerSignaturePath = $authorized['path'];
+                $auditMethod = 'pin_local';
+            } elseif ($method === 'draw') {
+                $managerSignaturePath = PluginActadeentregaSigningService::storeDrawing(
+                    (string)($_POST['signature_data'] ?? ''),
+                    (string)$acta['act_number'],
+                    'gerente'
+                );
+                $auditMethod = 'firma_dibujada';
+            } else {
+                throw new RuntimeException('Método de firma del gerente no válido.');
+            }
+
+            $managerSignatureHash = hash_file('sha256', $managerSignaturePath);
+            if (!$managerSignatureHash) throw new RuntimeException('No se pudo verificar la integridad de la firma del gerente.');
+
+            $DB->beginTransaction();
+            try {
+                $DB->update('glpi_plugin_actadeentrega_actas', [
+                    'manager_signature_path' => $managerSignaturePath,
+                    'manager_signature_method' => $auditMethod,
+                ], ['id' => $id, 'manager_signature_path' => '']);
+                if (method_exists($DB, 'affectedRows') && $DB->affectedRows() !== 1) {
+                    throw new RuntimeException('La firma del gerente ya fue registrada por otra operación. Actualice el acta.');
+                }
+                PluginActadeentregaSigningService::audit(
+                    $id, $managerId, 'gerente', $auditMethod,
+                    'Firma presencial del gerente registrada en la tablet del técnico GLPI ' . (int)Session::getLoginUserID()
+                );
+                $freshActa = PluginActadeentregaSigningService::acta($id);
+                PluginActadeentregaSigningService::finalize($freshActa);
+                $DB->commit();
+            } catch (Throwable $e) {
+                $DB->rollBack();
+                throw $e;
+            }
+
+            Session::addMessageAfterRedirect('Firma del gerente registrada. El acta quedó firmada y el PDF definitivo fue generado.', true, INFO);
+            Html::redirect('/plugins/actadeentrega/front/sign.php?id=' . $id);
+        }
+
         if ((string)$acta['status'] !== 'Pendiente de firma del colaborador') {
             throw new RuntimeException('La etapa de firma de responsables ya finalizó o el acta está cerrada.');
         }
@@ -225,18 +282,28 @@ foreach ($participants as $participant) {
     echo '<div class="ae-signline">' . $esc($name) . '</div></div>';
 }
 echo '<div class="ae-signbox"><h3>GERENTE O JEFE DE ÁREA</h3>';
-if (!empty($acta['manager_signature_path'])) echo '<div class="ae-signed">Firma registrada</div><div class="ae-help">Fecha: ' . $esc($acta['manager_signed_at'] ?? '') . '</div>';
-else echo '<p class="small text-muted">El gerente recibirá un enlace personal por correo cuando todos los responsables hayan firmado.</p>';
+$managerSigned = trim((string)($acta['manager_signature_path'] ?? '')) !== '';
+if ($managerSigned) {
+    echo '<div class="ae-signed"><i class="fas fa-check-circle"></i> Firma registrada</div><div class="ae-help">Fecha: ' . $esc($acta['manager_signed_at'] ?? '') . ' · Método: ' . $esc($methodLabels[(string)($acta['manager_signature_method'] ?? '')] ?? ($acta['manager_signature_method'] ?? '')) . '</div>';
+} else {
+    echo '<p class="small text-muted">' . ($status === 'Pendiente de firma del gerente' ? 'El gerente puede firmar presencialmente en la tablet del técnico o recibir un enlace personal por correo.' : 'La firma del gerente estará disponible cuando todos los responsables hayan firmado.') . '</p>';
+}
 echo '<div class="ae-signline">' . $esc($managerName) . '</div>';
-if (!$isFinal && $status === 'Pendiente de firma del gerente' && $allSigned && $managerHasPin && $managerEmail !== '') {
-    echo '<div class="ae-actions"><form method="post" action="/plugins/actadeentrega/front/send-manager.php"><input type="hidden" name="_glpi_csrf_token" value="' . $esc(Session::getNewCSRFToken(true)) . '"><input type="hidden" name="id" value="' . $id . '"><button class="ae-iconbtn" type="submit" title="Enviar enlace de firma al gerente"><i class="fas fa-envelope"></i></button></form></div><div class="ae-help">Enviar enlace seguro al gerente por correo.</div>';
-} elseif (!$isFinal && $status === 'Pendiente de firma del gerente') {
-    echo '<div class="ae-help">' . ($managerEmail === '' ? 'El gerente no tiene correo válido registrado.' : (!$managerHasPin ? 'El gerente no tiene firma personal y PIN habilitados en Informe Técnico.' : 'Todos los responsables firmaron.')) . '</div>';
+if (!$isFinal && !$managerSigned && $status === 'Pendiente de firma del gerente' && $allSigned) {
+    echo '<div class="ae-actions">';
+    echo '<button class="ae-iconbtn" type="button" title="Firma manuscrita del gerente" onclick="openManagerSignatureModal(\'draw\')"><i class="fas fa-pen-nib"></i></button>';
+    if ($managerHasPin) {
+        echo '<button class="ae-iconbtn" type="button" title="Firmar con PIN personal del gerente" onclick="openManagerSignatureModal(\'pin\')"><i class="fas fa-key"></i></button>';
+    }
+    if ($managerHasPin && $managerEmail !== '') {
+        echo '<form method="post" action="/plugins/actadeentrega/front/send-manager.php"><input type="hidden" name="_glpi_csrf_token" value="' . $esc(Session::getNewCSRFToken(true)) . '"><input type="hidden" name="id" value="' . $id . '"><button class="ae-iconbtn" type="submit" title="Enviar enlace de firma al gerente por correo"><i class="fas fa-envelope"></i></button></form>';
+    }
+    echo '</div><div class="ae-help">Firma manuscrita disponible. ' . ($managerHasPin ? 'También puede usar su PIN personal.' : 'No tiene PIN personal habilitado; la opción PIN y la firma remota no están disponibles.') . ($managerHasPin && $managerEmail !== '' ? ' También puede enviar el enlace seguro por correo.' : ($managerHasPin && $managerEmail === '' ? ' No tiene correo válido registrado para la firma remota.' : '')) . '</div>';
 }
 echo '</div></section><section class="ae-signatures"><div class="ae-signbox"><h3>ENTREGADO POR</h3><div class="ae-signed">Firma del técnico registrada</div><div class="ae-signline">' . $esc($snapshot['issuer']['name'] ?? '') . '</div></div><div class="ae-signbox"><h3>ESTADO</h3><p>' . ($isFinal ? 'Acta firmada y finalizada.' : ($allSigned ? 'Todos los responsables firmaron; pendiente gerente.' : 'Pendiente de firmas de responsables.')) . '</p><div class="ae-signline">' . $esc($acta['act_number']) . '</div></div></section></article></div>';
 
-if (!$isFinal && $status === 'Pendiente de firma del colaborador') {
-    echo '<div class="modal fade ae-modal" id="aeSignatureModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="aeModalTitle">Firma del responsable</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form method="post" id="aeSignatureForm"><input type="hidden" name="_glpi_csrf_token" value="' . $esc(Session::getNewCSRFToken(true)) . '"><input type="hidden" name="id" value="' . $id . '"><input type="hidden" name="participant_users_id" id="aeParticipantId"><input type="hidden" name="participant_method" id="aeMethod"><input type="hidden" name="signature_data" id="aeSignatureData"><div id="aeDrawArea"><canvas id="aeCanvas" class="ae-modal-canvas" width="1000" height="320"></canvas><div class="text-end mt-2"><button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearAeCanvas()">Limpiar</button></div></div><div id="aePinArea" style="display:none"><label class="form-label" for="aePin">PIN personal de 6 dígitos</label><input id="aePin" class="form-control" style="max-width:240px" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="off"></div><div class="d-flex justify-content-end gap-2 mt-3"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary">Aceptar y firmar</button></div></form></div></div></div></div>';
+if (!$isFinal && in_array($status, ['Pendiente de firma del colaborador', 'Pendiente de firma del gerente'], true)) {
+    echo '<div class="modal fade ae-modal" id="aeSignatureModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="aeModalTitle">Firma del responsable</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form method="post" id="aeSignatureForm"><input type="hidden" name="_glpi_csrf_token" value="' . $esc(Session::getNewCSRFToken(true)) . '"><input type="hidden" name="id" value="' . $id . '"><input type="hidden" name="participant_users_id" id="aeParticipantId"><input type="hidden" name="sign_as_manager" id="aeSignAsManager" value="0"><input type="hidden" name="participant_method" id="aeMethod"><input type="hidden" name="signature_data" id="aeSignatureData"><div id="aeDrawArea"><canvas id="aeCanvas" class="ae-modal-canvas" width="1000" height="320"></canvas><div class="text-end mt-2"><button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearAeCanvas()">Limpiar</button></div></div><div id="aePinArea" style="display:none"><label class="form-label" for="aePin">PIN personal de 6 dígitos</label><input id="aePin" class="form-control" style="max-width:240px" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="off"></div><div class="d-flex justify-content-end gap-2 mt-3"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary">Aceptar y firmar</button></div></form></div></div></div></div>';
 }
 echo <<<JS
 <script>
@@ -246,9 +313,20 @@ echo <<<JS
  if(ctx){ctx.lineWidth=3;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#111';}
  window.openSignatureModal=function(userId,name,nextMode){
    mode=nextMode;
+   document.getElementById('aeSignAsManager').value='0';
    document.getElementById('aeModalTitle').textContent=(mode==='pin'?'Autorización con PIN · ':'Firma manuscrita · ')+name;
    document.getElementById('aeParticipantId').value=userId;
    document.getElementById('aeMethod').value=mode;
+   document.getElementById('aeDrawArea').style.display=mode==='draw'?'block':'none';
+   document.getElementById('aePinArea').style.display=mode==='pin'?'block':'none';
+   document.getElementById('aePin').required=mode==='pin';document.getElementById('aePin').value='';
+   clearAeCanvas();modal=bootstrap.Modal.getOrCreateInstance(document.getElementById('aeSignatureModal'));modal.show();
+ };
+ window.openManagerSignatureModal=function(nextMode){
+   mode=nextMode;
+   document.getElementById('aeSignAsManager').value='1';
+   document.getElementById('aeParticipantId').value='';
+   document.getElementById('aeModalTitle').textContent=(mode==='pin'?'Autorización con PIN · ':'Firma manuscrita · ')+"Gerente";
    document.getElementById('aeDrawArea').style.display=mode==='draw'?'block':'none';
    document.getElementById('aePinArea').style.display=mode==='pin'?'block':'none';
    document.getElementById('aePin').required=mode==='pin';document.getElementById('aePin').value='';
