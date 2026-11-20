@@ -196,7 +196,13 @@ if ($managerId > 0 && $DB->tableExists('glpi_plugin_informeglopi_user_signatures
         && trim((string)($signatureRow['signature_path'] ?? '')) !== ''
         && trim((string)($signatureRow['signature_sha256'] ?? '')) !== ''
         && trim((string)($signatureRow['pin_hash'] ?? '')) !== '') {
-        $managerHasReusableSignature = true;
+        $signatureBase = realpath(rtrim(GLPI_VAR_DIR, DIRECTORY_SEPARATOR) . '/_plugins/informeglpi/signatures/users');
+        $signaturePath = realpath(rtrim(GLPI_VAR_DIR, DIRECTORY_SEPARATOR) . '/' . ltrim((string)$signatureRow['signature_path'], '/'));
+        if ($signatureBase && $signaturePath && str_starts_with($signaturePath, $signatureBase . DIRECTORY_SEPARATOR) && is_file($signaturePath)) {
+            $signatureHash = hash_file('sha256', $signaturePath);
+            $managerHasReusableSignature = $signatureHash !== false
+                && hash_equals((string)$signatureRow['signature_sha256'], $signatureHash);
+        }
     }
 }
 
