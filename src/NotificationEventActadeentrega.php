@@ -5,6 +5,11 @@ use Symfony\Component\Mime\Address;
 
 final class PluginActadeentregaNotificationEventActadeentrega
 {
+    public static function canCron(): bool
+    {
+        return true;
+    }
+
     public static function send(array $data): int
     {
         global $CFG_GLPI;
@@ -36,7 +41,7 @@ final class PluginActadeentregaNotificationEventActadeentrega
                 $hasTo = false;
                 foreach (array_values(array_unique($to)) as $address) {
                     if (!filter_var($address, FILTER_VALIDATE_EMAIL)) throw new RuntimeException('La cola contiene un destinatario Para no válido.');
-                    if (!isset($hasTo)) {
+                    if (!$hasTo) {
                         $mail->to(new Address($address));
                         $hasTo = true;
                     } else {
