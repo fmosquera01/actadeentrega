@@ -33,6 +33,7 @@ if ($isHelpdesk) {
 }
 
 $escape = static fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
+$methodLabels = ['pin_local' => 'PIN personal', 'firma_dibujada' => 'Firma manuscrita', 'legacy' => 'Firma anterior'];
 echo '<div class="container-fluid"><div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3"><div><h2>Mis actas firmadas</h2><p class="text-muted mb-0">Documentos en los que su firma quedó registrada.</p></div></div>';
 echo '<div class="table-responsive"><table class="table table-hover align-middle"><thead><tr><th>N.º de acta</th><th>Fecha</th><th>Activos</th><th>Mi firma</th><th>Estado</th><th>Documento</th></tr></thead><tbody>';
 $count = 0;
@@ -47,7 +48,7 @@ foreach ($rows as $row) {
     echo '<tr><td><strong>' . $escape($row['act_number']) . '</strong></td>';
     echo '<td>' . $escape(date('d/m/Y', strtotime((string)$row['act_date']))) . '</td>';
     echo '<td>' . $escape(implode(', ', $assets)) . '</td>';
-    echo '<td>' . $escape(date('d/m/Y H:i', strtotime((string)$row['signed_at']))) . '<div class="small text-muted">' . $escape($row['signature_method']) . '</div></td>';
+    echo '<td>' . $escape(date('d/m/Y H:i', strtotime((string)$row['signed_at']))) . '<div class="small text-muted">' . $escape($methodLabels[(string)$row['signature_method']] ?? $row['signature_method']) . '</div></td>';
     echo '<td>' . $escape($row['status']) . '</td>';
     echo '<td><a class="btn btn-sm btn-outline-primary" href="/plugins/actadeentrega/front/pdf.php?id=' . (int)$row['id'] . '" target="_blank" rel="noopener"><i class="ti ti-file-type-pdf"></i> Ver PDF</a></td></tr>';
 }
