@@ -35,6 +35,31 @@ if (!$canReadAll && !$isParticipant) {
     Html::displayNotFoundError();
 }
 
+// En la interfaz Self-Service solo se consulta un acta después de que
+// la firma individual del usuario haya quedado registrada.
+if (!$canReadAll && Session::getCurrentInterface() === 'helpdesk' && $isParticipant) {
+    $signed = false;
+    if ($DB->tableExists('glpi_plugin_actadeentrega_acta_users')) {
+        $signedRow = $DB->request([
+            'SELECT' => ['signed_at'],
+            'FROM' => 'glpi_plugin_actadeentrega_acta_users',
+            'WHERE' => ['plugin_actadeentrega_actas_id' => $id, 'users_id' => $userId],
+            'LIMIT' => 1,
+        ])->current();
+        $signed = $signedRow && !empty($signedRow['signed_at']);
+    }
+    if (!$signed && (int)$row['recipient_users_id'] === $userId) {
+        $legacy = $DB->request([
+            'SELECT' => ['recipient_signed_at'],
+            'FROM' => 'glpi_plugin_actadeentrega_actas',
+            'WHERE' => ['id' => $id],
+            'LIMIT' => 1,
+        ])->current();
+        $signed = $legacy && !empty($legacy['recipient_signed_at']);
+    }
+    if (!$signed) Html::displayNotFoundError();
+}
+
 $base = realpath(rtrim(GLPI_VAR_DIR, DIRECTORY_SEPARATOR) . '/_plugins/actadeentrega/acts');
 $path = realpath(rtrim(GLPI_VAR_DIR, DIRECTORY_SEPARATOR) . '/' . ltrim((string)$row['pdf_path'], '/'));
 if (!$base || !$path || !str_starts_with($path, $base . DIRECTORY_SEPARATOR) || !is_file($path)) {
