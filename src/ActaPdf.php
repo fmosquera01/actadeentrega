@@ -5,7 +5,7 @@ require_once dirname(__DIR__) . '/ActaEntregaPdfRenderer.php';
 
 final class PluginActadeentregaActaPdf
 {
-    public static function generate(array $snapshot, string $signaturePath, string $outputPath, array|string|null $recipientSignaturePath = null, ?string $managerSignaturePath = null): void
+    public static function generate(array $snapshot, string $signaturePath, string $outputPath, array|string|null $recipientSignaturePath = null, ?string $managerSignaturePath = null, string $managerSignedAt = ''): void
     {
         if (!class_exists('TCPDF')) {
             throw new RuntimeException('TCPDF no está disponible en GLPI.');
@@ -16,7 +16,9 @@ final class PluginActadeentregaActaPdf
 
         $user = $snapshot['user'] ?? [];
         $assets = $snapshot['assets'] ?? [];
-        $date = new DateTimeImmutable((string)($snapshot['date'] ?? 'now'));
+        $utc = new DateTimeZone('UTC');
+        $ecuador = new DateTimeZone('America/Guayaquil');
+        $date = (new DateTimeImmutable((string)($snapshot['date'] ?? 'now'), $utc))->setTimezone($ecuador);
         $months = [
             '', 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
             'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE',
@@ -72,6 +74,8 @@ final class PluginActadeentregaActaPdf
             'firmas_responsables' => $participantRows,
             'firma_responsable' => is_string($recipientSignaturePath) ? $recipientSignaturePath : null,
             'firma_gerente' => $managerSignaturePath,
+            'firma_gerente_signed_at' => $managerSignedAt,
+            'firma_entrega_signed_at' => (string)($snapshot['date'] ?? ''),
             'firma_entrega' => $signaturePath,
             'responsable_entrega' => (string)($snapshot['issuer']['name'] ?? ''),
         ];
