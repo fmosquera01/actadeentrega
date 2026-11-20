@@ -5,6 +5,7 @@ include('../../../inc/includes.php');
 Session::checkRight('plugin_actadeentrega', CREATE);
 require_once __DIR__ . '/../src/SigningService.php';
 require_once __DIR__ . '/../src/PublicSigningService.php';
+require_once __DIR__ . '/../src/ActaPresentation.php';
 
 global $DB, $CFG_GLPI;
 
@@ -32,6 +33,7 @@ try {
 
     $signatureUrl = $baseUrl . '/plugins/actadeentrega/front/public-sign.php?token=' . rawurlencode($token);
     $snapshot = json_decode((string)$acta['snapshot'], true) ?: [];
+    $participants = PluginActadeentregaSigningService::participants($id);
     $managerName = htmlspecialchars((string)($snapshot['user']['manager'] ?? 'Gerente'), ENT_QUOTES, 'UTF-8');
     $actNumber = htmlspecialchars((string)$acta['act_number'], ENT_QUOTES, 'UTF-8');
     $safeUrl = htmlspecialchars($signatureUrl, ENT_QUOTES, 'UTF-8');
@@ -54,6 +56,7 @@ try {
         . '<h2>Acta de Entrega pendiente de su firma</h2>'
         . '<p>Estimado/a ' . $managerName . ':</p>'
         . '<p>El acta <strong>' . $actNumber . '</strong> ya fue firmada por todos los responsables y corresponsables, y requiere su revisión y firma.</p>'
+        . PluginActadeentregaActaPresentation::emailDetails($acta, $snapshot, $participants)
         . '<p><a href="' . $safeUrl . '" style="display:inline-block;padding:12px 20px;background:#174f75;color:#fff;text-decoration:none;border-radius:5px">Revisar y firmar acta</a></p>'
         . '<p>El enlace es personal, tiene una vigencia de 48 horas y solicitará su PIN de firma personal. No reenvíe este mensaje.</p>'
         . '<p>Si no reconoce esta solicitud, puede ignorar este correo.</p>'
@@ -61,7 +64,13 @@ try {
     );
     $mail->text(
         "Estimado/a " . ($snapshot['user']['manager'] ?? 'Gerente') . ":\n\n"
-        . "El acta " . $acta['act_number'] . " fue firmada por todos los responsables y requiere su revisión y firma.\n"
+        . "El acta " . $acta['act_number'] . " fue firmada por todos los responsables y requiere su revisión y firma.\n\n"
+        . "Responsable: " . ($snapshot['user']['recipient'] ?? '') . "\n"
+        . "Gerente: " . ($snapshot['user']['manager'] ?? '') . "\n"
+        . "Área: " . ($snapshot['user']['area'] ?? '') . "\n"
+        . "Técnico que entrega: " . ($snapshot['issuer']['name'] ?? '') . "\n"
+        . "Activos entregados:\n" . implode("\n", array_map(static fn($a) => '- ' . ($a['type'] ?? '') . ' | Serie: ' . ($a['serial'] ?? '') . ' | Activo fijo: ' . (($a['asset_number'] ?? '') ?: 'N/A') . ' | ' . ($a['description'] ?? ''), $snapshot['assets'] ?? [])) . "\n\n"
+        . "Responsables y firmas:\n" . implode("\n", array_map(static fn($p) => '- ' . ($p['name'] ?? '') . ' — ' . (!empty($p['signed_at']) && !empty($p['signature_path']) ? 'Firmado: ' . PluginActadeentregaActaPresentation::date((string)$p['signed_at']) : 'Pendiente'), $participants)) . "\n\n"
         . "Acceda al enlace seguro: " . $signatureUrl . "\n\n"
         . "El enlace es personal, tiene una vigencia de 48 horas y solicitará su PIN de firma personal.\n"
     );
