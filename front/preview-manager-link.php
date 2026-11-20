@@ -7,7 +7,7 @@ require_once __DIR__ . '/../src/SigningService.php';
 require_once __DIR__ . '/../src/PublicSigningService.php';
 
 $id = (int)($_POST['id'] ?? 0);
-if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !Session::validateCSRFToken($_POST)) {
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     Html::displayErrorAndDie('Solicitud no válida.');
 }
 
