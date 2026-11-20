@@ -228,7 +228,7 @@ class ActaEntregaPdfRenderer
         $columns = count($participants) > 1 ? 2 : 1;
         $gap = 12.0;
         $boxW = $columns === 2 ? (433.0 - $gap) / 2 : 433.0;
-        $boxH = 76.0;
+        $boxH = 84.0;
 
         foreach (array_chunk($participants, $columns) as $row) {
             if ($y + $boxH > 790.0) {
@@ -244,18 +244,17 @@ class ActaEntregaPdfRenderer
                 $p->Rect($x, $y, $boxW, $boxH);
                 $path = (string)($participant['path'] ?? '');
                 if ($path !== '' && is_file($path)) {
-                    $p->Image($path, $x + 8, $y + 5, $boxW - 16, 39, '', '', '', true, 300, '', false, false, 0, 'CM', false, false);
+                    $p->Image($path, $x + 8, $y + 4, $boxW - 16, 36, '', '', '', true, 300, '', false, false, 0, 'CM', false, false);
                 }
-                $p->SetFont('helvetica', 'B', 8.5);
-                $p->SetXY($x + 5, $y + 46);
+                $p->SetFont('helvetica', 'B', 7.8);
                 $name = (string)($participant['name'] ?? '');
-                $p->MultiCell($boxW - 10, 12, $name, 0, 'C', false, 0, $x + 5, $y + 46, true, 0, false, true, 12, 'M');
-                $p->SetFont('helvetica', '', 7);
+                $p->MultiCell($boxW - 10, 20, $name, 0, 'C', false, 0, $x + 5, $y + 42, true, 0, false, true, 20, 'M');
+                $p->SetFont('helvetica', '', 6.5);
                 $signedAt = trim((string)($participant['signed_at'] ?? ''));
                 $method = trim((string)($participant['method'] ?? ''));
                 $meta = $signedAt !== '' ? date('d/m/Y H:i', strtotime($signedAt)) : '';
                 if ($method !== '') $meta .= ($meta !== '' ? ' · ' : '') . $method;
-                $p->SetXY($x + 5, $y + 60);
+                $p->SetXY($x + 5, $y + 65);
                 $p->Cell($boxW - 10, 10, $meta, 0, 0, 'C');
             }
             $y += $boxH + 8;
