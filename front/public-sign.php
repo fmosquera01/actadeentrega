@@ -71,7 +71,7 @@ if ($success) {
 } else {
     echo '<p class="ae-muted">Estimado/a ' . $escape($managerName) . ', revise la solicitud y confirme su firma para el acta <strong>' . $escape($actNumber) . '</strong>.</p>';
     echo '<p class="ae-muted">Para autorizar la firma se requiere su PIN personal de Informe Técnico. El PIN no se envía ni se almacena en este formulario.</p>';
-    echo '<form method="post" autocomplete="off"><input type="hidden" name="token" value="' . $escape($token) . '"><label for="manager_pin" class="form-label">PIN personal de 6 dígitos</label><input id="manager_pin" name="manager_pin" type="password" class="form-control" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required autofocus autocomplete="one-time-code"><button type="submit" class="btn btn-primary mt-3">Confirmar y firmar acta</button></form>';
+    echo '<form method="post" autocomplete="off"><input type="hidden" name="_glpi_csrf_token" value="' . $escape(Session::getNewCSRFToken(true)) . '"><input type="hidden" name="token" value="' . $escape($token) . '"><label for="manager_pin" class="form-label">PIN personal de 6 dígitos</label><input id="manager_pin" name="manager_pin" type="password" class="form-control" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required autofocus autocomplete="one-time-code"><button type="submit" class="btn btn-primary mt-3">Confirmar y firmar acta</button></form>';
     echo '<p class="ae-muted mt-3 small">Este enlace es personal, de un solo uso y vence a las 48 horas de su emisión.</p>';
 }
 echo '</section></main></body></html>';
