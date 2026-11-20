@@ -5,8 +5,11 @@ include('../../../inc/includes.php');
 Session::checkRight('plugin_actadeentrega', READ);
 Html::header('Actas de Entrega', $_SERVER['PHP_SELF'], 'plugins', 'PluginActadeentregaMenu');
 
-global $DB;
-echo "<div class='container-fluid'><h2>Actas de Entrega</h2>";
+echo "<div class='container-fluid'><div class='d-flex justify-content-between align-items-center flex-wrap gap-2'><h2>Actas de Entrega</h2>";
+if (Session::haveRight('config', UPDATE)) {
+    echo "<a class='btn btn-outline-secondary' href='/plugins/actadeentrega/front/config.php'><i class='ti ti-settings'></i> Configuración</a>";
+}
+echo "</div>";
 if (Session::haveRight('plugin_actadeentrega', CREATE)) {
     echo "<p><a class='btn btn-primary' href='/plugins/actadeentrega/front/acta.form.php'>Nueva acta de entrega</a> ";
 } else {
