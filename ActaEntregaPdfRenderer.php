@@ -266,10 +266,10 @@ class ActaEntregaPdfRenderer
         foreach ($participants as $index => $participant) {
             $nameY = $y + 5.0 + ($index * $nameLineH);
             $name = trim((string)($participant['name'] ?? ''));
-            $p->SetFont('helvetica', 'B', 7.7);
+            $p->SetFont('helvetica', 'B', 8.5);
             $p->SetTextColor(0, 0, 0);
             $p->SetXY($x + 6.0, $nameY);
-            $p->Cell($nameW - 12.0, 9.0, $name, 0, 0, 'L');
+            $p->Cell($nameW - 12.0, 11.0, $name, 0, 0, 'L');
 
             $signedAt = trim((string)($participant['signed_at'] ?? ''));
             if ($signedAt !== '') {
@@ -277,7 +277,7 @@ class ActaEntregaPdfRenderer
                 if ($timestamp !== '') {
                     $p->SetFont('helvetica', '', 6.5);
                     $p->SetTextColor(75, 75, 75);
-                    $p->SetXY($x + 6.0, $nameY + 9.0);
+                    $p->SetXY($x + 6.0, $nameY + 11.0);
                     $p->Cell($nameW - 12.0, 7.0, $timestamp, 0, 0, 'L');
                 }
             }
@@ -474,6 +474,8 @@ class ActaEntregaPdfRenderer
         $p->SetFont('helvetica', 'B', 7.5);
         $p->SetXY($x, $y + 28);
         $p->Cell($w, 11, 'RESPONSABLE DE ENTREGA', 0, 0, 'C');
+        $p->SetFont('helvetica', 'B', 8.5);
+        $p->SetTextColor(0, 0, 0);
         $p->SetXY($x, $y + 39);
         $p->Cell($w, 11, (string)($d['responsable_entrega'] ?? ''), 0, 0, 'C');
         $issuerSignedAt = self::formatEcuadorDateTime((string)($d['firma_entrega_signed_at'] ?? ''));
