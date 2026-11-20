@@ -165,6 +165,7 @@ $managerNameHtml = $esc($managerName);
 $actNumberHtml = $esc($acta['act_number']);
 $allSigned = PluginActadeentregaSigningService::allParticipantsSigned($id);
 $isFinal = $status === 'Firmada completamente';
+$methodLabels = ['pin_local' => 'PIN personal', 'firma_dibujada' => 'Firma manuscrita', 'legacy' => 'Firma anterior'];
 Html::header('Acta de Entrega', $_SERVER['PHP_SELF'], 'plugins', 'PluginActadeentregaMenu');
 echo <<<HTML
 <style>
@@ -209,7 +210,7 @@ foreach ($participants as $participant) {
     $nameJson = htmlspecialchars((string)json_encode($name, JSON_HEX_APOS|JSON_HEX_QUOT), ENT_QUOTES, 'UTF-8');
     echo '<div class="ae-signbox"><h3>' . ((int)$participant['is_holder'] === 1 ? 'RESPONSABLE PRINCIPAL' : 'CORRESPONSABLE') . '</h3>';
     if ($signed) {
-        echo '<div class="ae-signed"><i class="fas fa-check-circle"></i> Firma registrada</div><div class="ae-help">Fecha: ' . $esc($participant['signed_at']) . ' · Método: ' . $esc($participant['signature_method']) . '</div>';
+        echo '<div class="ae-signed"><i class="fas fa-check-circle"></i> Firma registrada</div><div class="ae-help">Fecha: ' . $esc($participant['signed_at']) . ' · Método: ' . $esc($methodLabels[(string)$participant['signature_method']] ?? $participant['signature_method']) . '</div>';
     } else {
         echo '<p class="small text-muted">Debe firmar personalmente en la tablet del técnico.</p>';
         if ($status === 'Pendiente de firma del colaborador') {
