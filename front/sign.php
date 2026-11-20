@@ -207,8 +207,8 @@ foreach ($participants as $participant) {
     } else {
         echo '<p class="small text-muted">Debe firmar personalmente en la tablet del técnico.</p>';
         if ($status === 'Pendiente de firma del colaborador') {
-            echo '<div class="ae-actions"><button class="ae-iconbtn" type="button" title="Firma manuscrita" onclick="openSignatureModal(' . $pid . ',' . json_encode($name, JSON_HEX_APOS|JSON_HEX_QUOT) . ',\'draw\')"><i class="fas fa-pen-nib"></i></button>';
-            if ($hasPin) echo '<button class="ae-iconbtn" type="button" title="Firmar con PIN" onclick="openSignatureModal(' . $pid . ',' . json_encode($name, JSON_HEX_APOS|JSON_HEX_QUOT) . ',\'pin\')"><i class="fas fa-key"></i></button>';
+            echo '<div class="ae-actions"><button class="ae-iconbtn" type="button" title="Firma manuscrita" onclick="openSignatureModal(' . $pid . ',' . $nameJson . ',\'draw\')"><i class="fas fa-pen-nib"></i></button>';
+            if ($hasPin) echo '<button class="ae-iconbtn" type="button" title="Firmar con PIN" onclick="openSignatureModal(' . $pid . ',' . $nameJson . ',\'pin\')"><i class="fas fa-key"></i></button>';
             echo '</div><div class="ae-help">' . ($hasPin ? 'Puede firmar con PIN personal o manuscritamente.' : 'No tiene PIN configurado; firme manuscritamente.') . '</div>';
         }
     }
