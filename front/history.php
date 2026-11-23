@@ -2,8 +2,10 @@
 declare(strict_types=1);
 
 include('../../../inc/includes.php');
+require_once __DIR__ . '/../src/Navigation.php';
 Session::checkRight('plugin_actadeentrega', READ);
 Html::header('Historial de Actas', $_SERVER['PHP_SELF'], 'plugins', 'PluginActadeentregaMenu');
+PluginActadeentregaNavigation::backButton('/plugins/actadeentrega/front/acta.php');
 global $DB;
 echo "<div class='container-fluid'><h2>Historial de actas de entrega</h2><table class='table table-sm table-hover'><thead><tr><th>Número</th><th>Fecha</th><th>Colaboradores responsables</th><th>Activos incluidos</th><th>Emitido por</th><th>Estado</th><th>Acción</th></tr></thead><tbody>";
 foreach ($DB->request(['SELECT'=>['id','act_number','act_date','recipient_users_id','issuer_users_id','snapshot','status'],'FROM'=>'glpi_plugin_actadeentrega_actas','ORDER'=>['id DESC']]) as $row) {
