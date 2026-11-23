@@ -2,8 +2,10 @@
 declare(strict_types=1);
 
 include('../../../inc/includes.php');
+require_once __DIR__ . '/../src/Navigation.php';
 Session::checkRight('config', UPDATE);
 Html::header('Configuración - Actas de Entrega', $_SERVER['PHP_SELF'], 'plugins', 'PluginActadeentregaMenu');
+PluginActadeentregaNavigation::backButton('/plugins/actadeentrega/front/acta.php');
 
 global $DB;
 require_once __DIR__ . '/../src/FinalMailService.php';
@@ -43,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $mailSettings = PluginActadeentregaFinalMailService::getSettings();
 echo "<div class='container-fluid' style='max-width:1100px'>";
-echo "<div class='d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3'><div><h2>Configuración de Actas de Entrega</h2><p class='text-muted mb-0'>Notificaciones de firma y envío automático a Activo Fijo.</p></div><a class='btn btn-outline-secondary' href='/plugins/actadeentrega/front/acta.php'>Volver</a></div>";
+echo "<div class='d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3'><div><h2>Configuración de Actas de Entrega</h2><p class='text-muted mb-0'>Notificaciones de firma y envío automático a Activo Fijo.</p></div></div>";
 echo "<div class='card card-body mb-4'><h3 class='h5'>Envío automático a Activo Fijo</h3><p class='text-muted small'>Se enviará al completarse la firma del gerente y generarse el PDF definitivo. GLPI utilizará el remitente y el servidor SMTP configurados en Administración de notificaciones.</p>";
 echo "<form method='post'><input type='hidden' name='_glpi_csrf_token' value='" . $escape(Session::getNewCSRFToken(true)) . "'><input type='hidden' name='action' value='save_final_mail'>";
 echo "<div class='form-check form-switch mb-3'><input class='form-check-input' type='checkbox' role='switch' id='ae-mail-enabled' name='is_enabled' value='1' " . ((int)$mailSettings['is_enabled'] === 1 ? 'checked' : '') . "><label class='form-check-label fw-semibold' for='ae-mail-enabled'>Activar envío automático al finalizar el acta</label></div>";
