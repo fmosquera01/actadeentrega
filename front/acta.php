@@ -2,8 +2,10 @@
 declare(strict_types=1);
 
 include('../../../inc/includes.php');
+require_once __DIR__ . '/../src/Navigation.php';
 Session::checkRight('plugin_actadeentrega', READ);
 Html::header('Actas de Entrega', $_SERVER['PHP_SELF'], 'plugins', 'PluginActadeentregaMenu');
+PluginActadeentregaNavigation::backButton('/front/central.php');
 
 echo "<div class='container-fluid'><div class='d-flex justify-content-between align-items-center flex-wrap gap-2'><h2>Actas de Entrega</h2>";
 if (Session::haveRight('config', UPDATE)) {
