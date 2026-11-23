@@ -38,9 +38,9 @@ final class PluginActadeentregaActaPdf
             ];
         }
 
-        $logoPath = dirname(__DIR__) . '/logo_songa.jpeg';
-        if (!is_file($logoPath)) {
-            throw new RuntimeException('No se encontró logo_songa.jpeg en la raíz del plugin.');
+        $logoPath = dirname(__DIR__) . '/public/logo_songa.jpeg';
+        if (!is_file($logoPath) || !is_readable($logoPath)) {
+            throw new RuntimeException('No se encontró o no se puede leer public/logo_songa.jpeg.');
         }
 
         $signatureByUser = [];
