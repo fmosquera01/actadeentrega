@@ -4,10 +4,12 @@ declare(strict_types=1);
 // GLPI ya está inicializado: este formulario también se carga embebido desde la pestaña del usuario.
 Session::checkRight('plugin_actadeentrega', CREATE);
 require_once __DIR__ . '/../src/ActaService.php';
+require_once __DIR__ . '/../src/Navigation.php';
 
 $embeddedInUser = ((int)($_GET['embedded'] ?? 0) === 1);
 if (!$embeddedInUser) {
     Html::header('Nueva acta de entrega', $_SERVER['PHP_SELF'], 'plugins', 'PluginActadeentregaMenu');
+    PluginActadeentregaNavigation::backButton($fromUser ? '/front/user.form.php?id=' . $userId . '&forcetab=PluginActadeentregaActa$1' : '/plugins/actadeentrega/front/acta.php');
 }
 
 global $DB;
@@ -27,7 +29,7 @@ if ($DB->tableExists('glpi_plugin_informeglopi_user_signatures')) {
 echo "<div class='container-fluid'>";
 echo "<div class='d-flex align-items-center justify-content-between mb-3'><h2 class='mb-0'>Nueva acta de entrega</h2>";
 if ($fromUser) {
-    echo "<a class='btn btn-outline-secondary' href='/front/user.form.php?id=" . $userId . "&forcetab=PluginActadeentregaActa$1'>Volver al colaborador</a>";
+
 }
 echo "</div>";
 
