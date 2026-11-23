@@ -14,6 +14,14 @@ try {
     $acta = PluginActadeentregaSigningService::acta($id);
     $snapshot = json_decode((string)$acta['snapshot'], true);
     if (!is_array($snapshot)) throw new RuntimeException('El contenido del acta no es válido.');
+    $snapshotParticipantNames = [];
+    foreach (($snapshot['participants'] ?? []) as $snapshotParticipant) {
+        $snapshotParticipantId = (int)($snapshotParticipant['users_id'] ?? 0);
+        $snapshotParticipantName = trim((string)($snapshotParticipant['name'] ?? ''));
+        if ($snapshotParticipantId > 0 && $snapshotParticipantName !== '') {
+            $snapshotParticipantNames[$snapshotParticipantId] = $snapshotParticipantName;
+        }
+    }
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (($_POST['sign_as_manager'] ?? '') === '1') {
@@ -150,7 +158,7 @@ try {
                 if ($path === '') continue;
                 $signatureRows[] = [
                     'users_id' => (int)$row['users_id'],
-                    'name' => getUserName((int)$row['users_id']),
+                    'name' => $snapshotParticipantNames[(int)$row['users_id']] ?? getUserName((int)$row['users_id']),
                     'path' => $path,
                     'signed_at' => (string)$row['signed_at'],
                     'method' => (string)$row['signature_method'],
@@ -271,7 +279,7 @@ echo '<section class="ae-terms"><strong>Me comprometo con la compañía a hacerm
 echo '<h2 class="ae-section-title">ACEPTACIÓN Y FIRMAS</h2><section class="ae-signatures">';
 foreach ($participants as $participant) {
     $pid = (int)$participant['users_id'];
-    $name = getUserName($pid);
+    $name = $snapshotParticipantNames[$pid] ?? getUserName($pid);
     $signed = trim((string)($participant['signature_path'] ?? '')) !== '' && !empty($participant['signed_at']);
     $hasPin = false;
     if ($DB->tableExists('glpi_plugin_informeglopi_user_signatures')) {
