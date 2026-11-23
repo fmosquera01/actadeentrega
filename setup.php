@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-define('PLUGIN_ACTADEENTREGA_VERSION', '0.2.58');
+define('PLUGIN_ACTADEENTREGA_VERSION', '0.2.59');
 
 require_once __DIR__ . '/src/ActaService.php';
 require_once __DIR__ . '/src/ActaPdf.php';
