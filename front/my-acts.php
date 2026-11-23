@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 include('../../../inc/includes.php');
+require_once __DIR__ . '/../src/Navigation.php';
 
 $userId = (int)Session::getLoginUserID();
 if ($userId < 1) Html::displayNotFoundError();
@@ -64,6 +65,7 @@ if ($isHelpdesk) {
     Html::header('Mis actas firmadas', $_SERVER['PHP_SELF'], 'plugins', 'PluginActadeentregaMenu');
 }
 
+PluginActadeentregaNavigation::backButton('/front/central.php');
 $escape = static fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 $methodLabels = ['pin_local' => 'PIN personal', 'firma_dibujada' => 'Firma manuscrita', 'pin_remoto' => 'PIN remoto', 'pin_glpi' => 'PIN del técnico', 'legacy' => 'Firma anterior'];
 echo '<div class="container-fluid"><div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3"><div><h2>Mis actas firmadas</h2><p class="text-muted mb-0">Documentos en los que su firma quedó registrada.</p></div></div>';
