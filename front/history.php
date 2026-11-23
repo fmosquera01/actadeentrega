@@ -86,6 +86,49 @@ echo "</div></form>";
 $pagerParameters = $search !== '' ? 'q=' . rawurlencode($search) : '';
 Html::printPager($start, $total, $target, $pagerParameters);
 
+// Navegación numérica directa entre páginas.
+$totalPages = (int)ceil($total / $limit);
+if ($totalPages > 1) {
+    $currentPage = (int)floor($start / $limit) + 1;
+    $windowStart = max(1, $currentPage - 2);
+    $windowEnd = min($totalPages, $currentPage + 2);
+    if ($windowEnd - $windowStart < 4) {
+        if ($windowStart === 1) {
+            $windowEnd = min($totalPages, 5);
+        } elseif ($windowEnd === $totalPages) {
+            $windowStart = max(1, $totalPages - 4);
+        }
+    }
+    echo "<nav aria-label='Paginación del historial' class='d-flex justify-content-center mb-3'><ul class='pagination pagination-sm'>";
+    if ($currentPage > 1) {
+        $previousStart = ($currentPage - 2) * $limit;
+        echo "<li class='page-item'><a class='page-link' href='" . htmlspecialchars($target . '?' . $pagerParameters . ($pagerParameters !== '' ? '&' : '') . 'start=' . $previousStart, ENT_QUOTES, 'UTF-8') . "' aria-label='Página anterior'>&laquo;</a></li>";
+    }
+    if ($windowStart > 1) {
+        echo "<li class='page-item'><a class='page-link' href='" . htmlspecialchars($target . '?' . ($pagerParameters !== '' ? $pagerParameters . '&' : '') . 'start=0', ENT_QUOTES, 'UTF-8') . "'>1</a></li>";
+        if ($windowStart > 2) echo "<li class='page-item disabled'><span class='page-link'>…</span></li>";
+    }
+    for ($page = $windowStart; $page <= $windowEnd; $page++) {
+        $pageStart = ($page - 1) * $limit;
+        $active = $page === $currentPage ? ' active' : '';
+        $aria = $page === $currentPage ? " aria-current='page'" : '';
+        $url = $target . '?' . ($pagerParameters !== '' ? $pagerParameters . '&' : '') . 'start=' . $pageStart;
+        echo "<li class='page-item" . $active . "'><a class='page-link' href='" . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . "'" . $aria . ">" . $page . "</a></li>";
+    }
+    if ($windowEnd < $totalPages) {
+        if ($windowEnd < $totalPages - 1) echo "<li class='page-item disabled'><span class='page-link'>…</span></li>";
+        $lastStart = ($totalPages - 1) * $limit;
+        $url = $target . '?' . ($pagerParameters !== '' ? $pagerParameters . '&' : '') . 'start=' . $lastStart;
+        echo "<li class='page-item'><a class='page-link' href='" . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . "'>" . $totalPages . "</a></li>";
+    }
+    if ($currentPage < $totalPages) {
+        $nextStart = $currentPage * $limit;
+        $url = $target . '?' . ($pagerParameters !== '' ? $pagerParameters . '&' : '') . 'start=' . $nextStart;
+        echo "<li class='page-item'><a class='page-link' href='" . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . "' aria-label='Página siguiente'>&raquo;</a></li>";
+    }
+    echo "</ul></nav>";
+}
+
 echo "<div class='table-responsive'><table class='table table-sm table-hover'>";
 echo "<thead><tr><th>Número</th><th>Fecha</th><th>Colaboradores responsables</th><th>Activos incluidos</th><th>Emitido por</th><th>Estado</th><th>Acción</th></tr></thead><tbody>";
 
