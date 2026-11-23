@@ -13,16 +13,16 @@ global $DB, $CFG_GLPI;
 $table = 'glpi_plugin_actadeentrega_actas';
 $target = rtrim((string)($CFG_GLPI['root_doc'] ?? ''), '/') . '/plugins/actadeentrega/front/history.php';
 
-// Utilizar el mismo selector de cantidad de registros que los listados nativos de GLPI.
-if (isset($_POST['glpilist_limit']) && is_numeric($_POST['glpilist_limit'])) {
-    $requestedLimit = (int)$_POST['glpilist_limit'];
-    $maximumLimit = (int)($CFG_GLPI['list_limit_max'] ?? 1000);
-    if ($requestedLimit > 0 && $requestedLimit <= $maximumLimit) {
-        $_SESSION['glpilist_limit'] = $requestedLimit;
-    }
+// Selector de registros por página mediante GET: evita el POST sin token CSRF
+// que GLPI 11 rechaza en las páginas propias de plugins.
+$allowedLimits = [10, 20, 50, 100, 200, 500];
+if (isset($_GET['glpilist_limit']) && in_array((int)$_GET['glpilist_limit'], $allowedLimits, true)) {
+    $_SESSION['glpilist_limit'] = (int)$_GET['glpilist_limit'];
 }
-
 $limit = (int)($_SESSION['glpilist_limit'] ?? $CFG_GLPI['list_limit'] ?? 20);
+if (!in_array($limit, $allowedLimits, true)) {
+    $limit = 20;
+}
 if ($limit < 1) {
     $limit = 20;
 }
@@ -83,48 +83,62 @@ if ($search !== '') {
 }
 echo "</div></form>";
 
-$pagerParameters = $search !== '' ? 'q=' . rawurlencode($search) : '';
-Html::printPager($start, $total, $target, $pagerParameters);
-
-// Navegación numérica directa entre páginas.
 $totalPages = (int)ceil($total / $limit);
+$currentPage = $totalPages > 0 ? (int)floor($start / $limit) + 1 : 1;
+$baseParams = [];
+if ($search !== '') $baseParams['q'] = $search;
+$baseParams['glpilist_limit'] = $limit;
+$makePageUrl = static function(int $page) use ($target, $limit, $baseParams): string {
+    $params = $baseParams;
+    $params['start'] = max(0, ($page - 1) * $limit);
+    return $target . '?' . http_build_query($params);
+};
+
+echo "<div class='d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3'>";
+echo "<form method='get' action='" . htmlspecialchars($target, ENT_QUOTES, 'UTF-8') . "' class='d-flex align-items-center gap-2'>";
+if ($search !== '') echo "<input type='hidden' name='q' value='" . htmlspecialchars($search, ENT_QUOTES, 'UTF-8') . "'>";
+echo "<label for='ae-list-limit' class='form-label mb-0'>Mostrar</label>";
+echo "<select id='ae-list-limit' name='glpilist_limit' class='form-select form-select-sm' style='width:auto' onchange='this.form.submit()'>";
+foreach ([10, 20, 50, 100, 200, 500] as $option) {
+    $selected = $option === $limit ? ' selected' : '';
+    echo "<option value='" . $option . "'" . $selected . ">" . $option . "</option>";
+}
+echo "</select><span>registros</span></form>";
+if ($totalPages > 0) {
+    $from = $start + 1;
+    $to = min($start + $limit, $total);
+    echo "<span class='text-muted'>Mostrando " . $from . "–" . $to . " de " . $total . " actas</span>";
+}
+echo "</div>";
+
 if ($totalPages > 1) {
-    $currentPage = (int)floor($start / $limit) + 1;
     $windowStart = max(1, $currentPage - 2);
     $windowEnd = min($totalPages, $currentPage + 2);
     if ($windowEnd - $windowStart < 4) {
-        if ($windowStart === 1) {
-            $windowEnd = min($totalPages, 5);
-        } elseif ($windowEnd === $totalPages) {
-            $windowStart = max(1, $totalPages - 4);
-        }
+        if ($windowStart === 1) $windowEnd = min($totalPages, 5);
+        elseif ($windowEnd === $totalPages) $windowStart = max(1, $totalPages - 4);
     }
-    echo "<nav aria-label='Paginación del historial' class='d-flex justify-content-center mb-3'><ul class='pagination pagination-sm'>";
+    echo "<nav aria-label='Paginación del historial' class='mb-3'><ul class='pagination pagination-sm justify-content-center flex-wrap'>";
     if ($currentPage > 1) {
-        $previousStart = ($currentPage - 2) * $limit;
-        echo "<li class='page-item'><a class='page-link' href='" . htmlspecialchars($target . '?' . $pagerParameters . ($pagerParameters !== '' ? '&' : '') . 'start=' . $previousStart, ENT_QUOTES, 'UTF-8') . "' aria-label='Página anterior'>&laquo;</a></li>";
+        echo "<li class='page-item'><a class='page-link' href='" . htmlspecialchars($makePageUrl(1), ENT_QUOTES, 'UTF-8') . "' aria-label='Primera página'>&laquo;&laquo;</a></li>";
+        echo "<li class='page-item'><a class='page-link' href='" . htmlspecialchars($makePageUrl($currentPage - 1), ENT_QUOTES, 'UTF-8') . "' aria-label='Página anterior'>&laquo;</a></li>";
     }
     if ($windowStart > 1) {
-        echo "<li class='page-item'><a class='page-link' href='" . htmlspecialchars($target . '?' . ($pagerParameters !== '' ? $pagerParameters . '&' : '') . 'start=0', ENT_QUOTES, 'UTF-8') . "'>1</a></li>";
+        echo "<li class='page-item'><a class='page-link' href='" . htmlspecialchars($makePageUrl(1), ENT_QUOTES, 'UTF-8') . "'>1</a></li>";
         if ($windowStart > 2) echo "<li class='page-item disabled'><span class='page-link'>…</span></li>";
     }
     for ($page = $windowStart; $page <= $windowEnd; $page++) {
-        $pageStart = ($page - 1) * $limit;
         $active = $page === $currentPage ? ' active' : '';
         $aria = $page === $currentPage ? " aria-current='page'" : '';
-        $url = $target . '?' . ($pagerParameters !== '' ? $pagerParameters . '&' : '') . 'start=' . $pageStart;
-        echo "<li class='page-item" . $active . "'><a class='page-link' href='" . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . "'" . $aria . ">" . $page . "</a></li>";
+        echo "<li class='page-item" . $active . "'><a class='page-link' href='" . htmlspecialchars($makePageUrl($page), ENT_QUOTES, 'UTF-8') . "'" . $aria . ">" . $page . "</a></li>";
     }
     if ($windowEnd < $totalPages) {
         if ($windowEnd < $totalPages - 1) echo "<li class='page-item disabled'><span class='page-link'>…</span></li>";
-        $lastStart = ($totalPages - 1) * $limit;
-        $url = $target . '?' . ($pagerParameters !== '' ? $pagerParameters . '&' : '') . 'start=' . $lastStart;
-        echo "<li class='page-item'><a class='page-link' href='" . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . "'>" . $totalPages . "</a></li>";
+        echo "<li class='page-item'><a class='page-link' href='" . htmlspecialchars($makePageUrl($totalPages), ENT_QUOTES, 'UTF-8') . "'>" . $totalPages . "</a></li>";
     }
     if ($currentPage < $totalPages) {
-        $nextStart = $currentPage * $limit;
-        $url = $target . '?' . ($pagerParameters !== '' ? $pagerParameters . '&' : '') . 'start=' . $nextStart;
-        echo "<li class='page-item'><a class='page-link' href='" . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . "' aria-label='Página siguiente'>&raquo;</a></li>";
+        echo "<li class='page-item'><a class='page-link' href='" . htmlspecialchars($makePageUrl($currentPage + 1), ENT_QUOTES, 'UTF-8') . "' aria-label='Página siguiente'>&raquo;</a></li>";
+        echo "<li class='page-item'><a class='page-link' href='" . htmlspecialchars($makePageUrl($totalPages), ENT_QUOTES, 'UTF-8') . "' aria-label='Última página'>&raquo;&raquo;</a></li>";
     }
     echo "</ul></nav>";
 }
