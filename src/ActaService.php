@@ -10,14 +10,14 @@ final class PluginActadeentregaActaService
 
     private const ASSET_TYPES = [
         'Computer' => ['table' => 'glpi_computers', 'label' => 'COMPUTADORA', 'model' => 'computermodels_id', 'asset_type' => 'computertypes_id', 'asset_type_table' => 'glpi_computertypes'],
-        'Monitor' => ['table' => 'glpi_monitors', 'label' => 'MONITOR', 'model' => 'monitormodels_id'],
-        'Phone' => ['table' => 'glpi_phones', 'label' => 'TELÉFONO', 'model' => 'phonemodels_id'],
-        'Printer' => ['table' => 'glpi_printers', 'label' => 'IMPRESORA', 'model' => 'printermodels_id'],
-        'Peripheral' => ['table' => 'glpi_peripherals', 'label' => 'PERIFÉRICO', 'model' => 'peripheralmodels_id'],
-        'NetworkEquipment' => ['table' => 'glpi_networkequipments', 'label' => 'EQUIPO DE RED', 'model' => 'networkequipmentmodels_id'],
-        'PDU' => ['table' => 'glpi_pdus', 'label' => 'PDU', 'model' => 'pdumodels_id'],
+        'Monitor' => ['table' => 'glpi_monitors', 'label' => 'MONITOR', 'model' => 'monitormodels_id', 'asset_type' => 'monitortypes_id', 'asset_type_table' => 'glpi_monitortypes'], 
+        'Phone' => ['table' => 'glpi_phones', 'label' => 'TELÉFONO', 'model' => 'phonemodels_id', 'asset_type' => 'phonetypes_id', 'asset_type_table' => 'glpi_phonetypes'], 
+        'Printer' => ['table' => 'glpi_printers', 'label' => 'IMPRESORA', 'model' => 'printermodels_id', 'asset_type' => 'printertypes_id', 'asset_type_table' => 'glpi_printertypes'], 
+        'Peripheral' => ['table' => 'glpi_peripherals', 'label' => 'PERIFÉRICO', 'model' => 'peripheralmodels_id', 'asset_type' => 'peripheraltypes_id', 'asset_type_table' => 'glpi_peripheraltypes'], 
+        'NetworkEquipment' => ['table' => 'glpi_networkequipments', 'label' => 'EQUIPO DE RED', 'model' => 'networkequipmentmodels_id', 'asset_type' => 'networkequipmenttypes_id', 'asset_type_table' => 'glpi_networkequipmenttypes'], 
+        'PDU' => ['table' => 'glpi_pdus', 'label' => 'PDU', 'model' => 'pdumodels_id', 'asset_type' => 'pdutypes_id', 'asset_type_table' => 'glpi_pdutypes'], 
         'Enclosure' => ['table' => 'glpi_enclosures', 'label' => 'GABINETE', 'model' => 'enclosuremodels_id'],
-        'Rack' => ['table' => 'glpi_racks', 'label' => 'RACK', 'model' => 'rackmodels_id'],
+        'Rack' => ['table' => 'glpi_racks', 'label' => 'RACK', 'model' => 'rackmodels_id', 'asset_type' => 'racktypes_id', 'asset_type_table' => 'glpi_racktypes'], 
     ];
 
     public static function getUser(int $id): array
