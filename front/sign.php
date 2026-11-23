@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 include('../../../inc/includes.php');
+require_once __DIR__ . '/../src/Navigation.php';
 Session::checkRight('plugin_actadeentrega', CREATE);
 require_once __DIR__ . '/../src/ActaService.php';
 require_once __DIR__ . '/../src/SigningService.php';
@@ -243,6 +244,7 @@ $allSigned = PluginActadeentregaSigningService::allParticipantsSigned($id);
 $isFinal = $status === 'Firmada completamente';
 $methodLabels = ['pin_local' => 'PIN personal', 'firma_dibujada' => 'Firma manuscrita', 'legacy' => 'Firma anterior'];
 Html::header('Acta de Entrega', $_SERVER['PHP_SELF'], 'plugins', 'PluginActadeentregaMenu');
+PluginActadeentregaNavigation::backButton('/plugins/actadeentrega/front/history.php');
 echo <<<HTML
 <style>
 .ae-page{max-width:1120px;margin:18px auto 42px;color:#20252b}.ae-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
