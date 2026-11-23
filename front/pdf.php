@@ -18,6 +18,14 @@ $canReadAll = Session::haveRight('plugin_actadeentrega', READ);
 $userId = (int)Session::getLoginUserID();
 $isParticipant = (int)$row['recipient_users_id'] === $userId;
 $snapshot = json_decode((string)$row['snapshot'], true) ?: [];
+$snapshotParticipantNames = [];
+foreach (($snapshot['participants'] ?? []) as $snapshotParticipant) {
+    $snapshotParticipantId = (int)($snapshotParticipant['users_id'] ?? 0);
+    $snapshotParticipantName = trim((string)($snapshotParticipant['name'] ?? ''));
+    if ($snapshotParticipantId > 0 && $snapshotParticipantName !== '') {
+        $snapshotParticipantNames[$snapshotParticipantId] = $snapshotParticipantName;
+    }
+}
 $isIssuer = (int)$row['issuer_users_id'] === $userId && trim((string)$row['issuer_signature_path']) !== '';
 $isManager = (int)($snapshot['user']['manager_users_id'] ?? 0) === $userId
     && trim((string)$row['manager_signature_path']) !== ''
@@ -57,7 +65,7 @@ if ((string)$row['status'] !== 'Firmada completamente'
             ]) as $participantRow) {
                 $participants[] = [
                     'users_id' => (int)$participantRow['users_id'],
-                    'name' => getUserName((int)$participantRow['users_id']),
+                    'name' => $snapshotParticipantNames[(int)$participantRow['users_id']] ?? getUserName((int)$participantRow['users_id']),
                     'path' => (string)($participantRow['signature_path'] ?? ''),
                     'signed_at' => (string)($participantRow['signed_at'] ?? ''),
                     'method' => (string)($participantRow['signature_method'] ?? ''),
