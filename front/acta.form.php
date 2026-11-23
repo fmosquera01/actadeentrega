@@ -9,12 +9,14 @@ require_once __DIR__ . '/../src/Navigation.php';
 $embeddedInUser = ((int)($_GET['embedded'] ?? 0) === 1);
 if (!$embeddedInUser) {
     Html::header('Nueva acta de entrega', $_SERVER['PHP_SELF'], 'plugins', 'PluginActadeentregaMenu');
-    PluginActadeentregaNavigation::backButton($fromUser ? '/front/user.form.php?id=' . $userId . '&forcetab=PluginActadeentregaActa$1' : '/plugins/actadeentrega/front/acta.php');
 }
 
 global $DB;
 $userId = (int) ($_GET['users_id'] ?? 0);
 $fromUser = ((int)($_GET['from_user'] ?? 0) === 1 && $userId > 0);
+if (!$embeddedInUser) {
+    PluginActadeentregaNavigation::backButton($fromUser ? '/front/user.form.php?id=' . $userId . '&forcetab=PluginActadeentregaActa$1' : '/plugins/actadeentrega/front/acta.php');
+}
 $user = $userId > 0 ? PluginActadeentregaActaService::getUser($userId) : [];
 $assets = $userId > 0 ? PluginActadeentregaActaService::getAssets($userId) : [];
 $signatureExists = false;
