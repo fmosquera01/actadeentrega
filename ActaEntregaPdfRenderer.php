@@ -8,7 +8,7 @@
  * Uso:
  *   $pdf = ActaEntregaPdfRenderer::render($data);   // string binario del PDF
  *
- * Requiere TCPDF (el que incluye GLPI) y el archivo logo_songa.jpeg.
+ * Requiere TCPDF (el que incluye GLPI) y el archivo public/logo_songa.jpeg.
  */
 class ActaEntregaPdfRenderer
 {
@@ -68,7 +68,7 @@ class ActaEntregaPdfRenderer
     private function header(array $d): float
     {
         $p = $this->pdf;
-        $logo = $d['logo'] ?? (__DIR__ . '/logo_songa.jpeg');
+        $logo = $d['logo'] ?? (__DIR__ . '/public/logo_songa.jpeg');
         if (is_file($logo)) {
             $p->Image($logo, 22, 13, 143, 0, '', '', '', true, 300);
         }
@@ -531,6 +531,6 @@ $data = [
     'firma_responsable'   => null,   // rutas opcionales a imágenes de firma
     'firma_gerente'       => null,
     'firma_entrega'       => null,
-    'logo'                => __DIR__ . '/logo_songa.jpeg',
+    'logo'                => __DIR__ . '/public/logo_songa.jpeg',
 ];
 */
