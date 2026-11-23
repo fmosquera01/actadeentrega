@@ -284,11 +284,18 @@ final class PluginActadeentregaActaService
             if ($assetTypeName !== '') $parts[] = $assetTypeName;
         }
 
-        // En computadoras el nombre interno (por ejemplo, s906) no forma parte
-        // de la descripción institucional solicitada.
-        if (($asset['_itemtype'] ?? '') !== 'Computer'
-            && trim((string) ($asset['name'] ?? '')) !== '') {
-            $parts[] = trim((string) $asset['name']);
+        // La descripción institucional inicia con el tipo del activo.
+        // Si existe un subtipo configurado (por ejemplo, Laptop), se utiliza;
+        // para los demás activos se usa la etiqueta del tipo GLPI/Asset Definition.
+        if ($parts === []) {
+            $assetLabel = trim((string) ($asset['_label'] ?? ''));
+            if ($assetLabel === '') {
+                $itemtype = (string) ($asset['_itemtype'] ?? '');
+                if ($itemtype !== '' && class_exists($itemtype)) {
+                    $assetLabel = trim((string) $itemtype::getTypeName(1));
+                }
+            }
+            if ($assetLabel !== '') $parts[] = $assetLabel;
         }
 
         $manufacturer = (int) ($asset['manufacturers_id'] ?? 0);
